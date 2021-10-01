@@ -178,6 +178,7 @@ namespace BPlusTree
             newRootNode[0].Value = _root;
             newRootNode[1] = addToParent;
             _root = new NodeLink(newRootNode, 2);
+            Depth++;
         }
 
     }

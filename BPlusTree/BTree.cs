@@ -137,7 +137,7 @@ namespace BPlusTree
         /// <summary>
         /// Points to the root node of the B+Tree.
         /// </summary>
-        protected NodeLink _root;
+        internal NodeLink _root;
 
         /// <summary>
         /// Find the index within a node where an entry can be inserted for the given key.

@@ -48,8 +48,11 @@ namespace BPlusTree
 
         public void Dispose()
         {
-            ArrayPool<BTreeStep>.Shared.Return(Steps);
+            var steps = Steps;
             this = default;
+
+            if (steps != null)
+                ArrayPool<BTreeStep>.Shared.Return(steps);
         }
     }
 

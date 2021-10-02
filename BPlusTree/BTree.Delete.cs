@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace BPlusTree
 {
-    public partial class BTreeBase<TKey>
+    internal static partial class BTreeCore
     {
         /// <summary>
         /// Delete an entry at the given index in a node without regard to the number
@@ -13,9 +13,9 @@ namespace BPlusTree
         /// <param name="deleteIndex">The index of the entry to delete. </param>
         /// <param name="numEntries">The variable holding the number of active entries
         /// in the node; it will be decremented by one. </param>
-        internal static void DeleteEntryWithinNode<TValue>(Entry<TKey, TValue>[] node, 
-                                                           int deleteIndex, 
-                                                           ref int numEntries)
+        public static void DeleteEntryWithinNode<TKey, TValue>(Entry<TKey, TValue>[] node, 
+                                                               int deleteIndex, 
+                                                               ref int numEntries)
         {
             var entries = node.AsSpan();
             entries[(deleteIndex + 1)..numEntries].CopyTo(entries[deleteIndex..]);
@@ -63,14 +63,14 @@ namespace BPlusTree
         /// time the old pivot key will be demoted and stored into either
         /// the left or right node.  
         /// </param>
-        internal static void DeleteEntryAndShift<TValue>(Entry<TKey, TValue>[] leftNode,
-                                                         Entry<TKey, TValue>[] rightNode,
-                                                         ref int leftEntriesCount,
-                                                         ref int rightEntriesCount,
-                                                         ref TKey pivotKey,
-                                                         int deleteIndex,
-                                                         int shiftIndex,
-                                                         bool deleteFromLeft)
+        public static void DeleteEntryAndShift<TKey, TValue>(Entry<TKey, TValue>[] leftNode,
+                                                             Entry<TKey, TValue>[] rightNode,
+                                                             ref int leftEntriesCount,
+                                                             ref int rightEntriesCount,
+                                                             ref TKey pivotKey,
+                                                             int deleteIndex,
+                                                             int shiftIndex,
+                                                             bool deleteFromLeft)
         {
             var leftEntries = leftNode.AsSpan();
             var rightEntries = rightNode.AsSpan();
@@ -216,13 +216,13 @@ namespace BPlusTree
         /// Whether the entry for the current node needs to be deleted
         /// from its parent, because it has merged with a neighbor.
         /// </returns>
-        internal static bool DeleteEntryAndRebalanceOneLevel<TValue>(int deleteIndex,
-                                                                     ref NodeLink nodeLink,
-                                                                     ref NodeLink leftNeighbor,
-                                                                     ref NodeLink rightNeighbor,
-                                                                     ref TKey leftPivotKey,
-                                                                     ref TKey rightPivotKey,
-                                                                     bool leftNeighborHasSameParent)
+        public static bool DeleteEntryAndRebalanceOneLevel<TKey, TValue>(int deleteIndex,
+                                                                         ref NodeLink nodeLink,
+                                                                         ref NodeLink leftNeighbor,
+                                                                         ref NodeLink rightNeighbor,
+                                                                         ref TKey leftPivotKey,
+                                                                         ref TKey rightPivotKey,
+                                                                         bool leftNeighborHasSameParent)
         {
             ref var numEntries = ref nodeLink.EntriesCount;
             var currentNode = (Entry<TKey, TValue>[])nodeLink.Child!;
@@ -371,19 +371,22 @@ namespace BPlusTree
             {
                 if (level > 0)
                 {
-                    return DeleteEntryAndRebalanceOneLevel<TValue>(deleteIndex,
-                                                                   ref nodeLink,
-                                                                   ref leftNeighbor,
-                                                                   ref rightNeighbor,
-                                                                   ref leftPivotKey,
-                                                                   ref rightPivotKey,
-                                                                   leftNeighborHasSameParent);
+                    return BTreeCore.DeleteEntryAndRebalanceOneLevel<TKey, TValue>(
+                        deleteIndex,
+                        ref nodeLink,
+                        ref leftNeighbor,
+                        ref rightNeighbor,
+                        ref leftPivotKey,
+                        ref rightPivotKey,
+                        leftNeighborHasSameParent);
                 }
                 else
                 {
                     // A leaf root node never re-balances.
                     var rootLeafNode = AsLeafNode(nodeLink.Child!);
-                    DeleteEntryWithinNode(rootLeafNode, deleteIndex, ref nodeLink.EntriesCount);
+                    BTreeCore.DeleteEntryWithinNode(rootLeafNode, 
+                                                    deleteIndex, 
+                                                    ref nodeLink.EntriesCount);
                 }
             }
 
@@ -447,20 +450,23 @@ namespace BPlusTree
                     // had just merged with a neighbor.
                     if (level > 0)
                     {
-                        return DeleteEntryAndRebalanceOneLevel<NodeLink>(deleteIndex,
-                                                                         ref nodeLink,
-                                                                         ref leftNeighbor,
-                                                                         ref rightNeighbor,
-                                                                         ref leftPivotKey,
-                                                                         ref rightPivotKey,
-                                                                         leftNeighborHasSameParent);
+                        return BTreeCore.DeleteEntryAndRebalanceOneLevel<TKey, NodeLink>
+                            (deleteIndex,
+                             ref nodeLink,
+                             ref leftNeighbor,
+                             ref rightNeighbor,
+                             ref leftPivotKey,
+                             ref rightPivotKey,
+                             leftNeighborHasSameParent);
                     }
 
                     // A non-leaf root node has no neighbors to re-balance against,
                     // but it can collapse when it has only one child left.
                     else
                     {
-                        DeleteEntryWithinNode(currentNode, deleteIndex, ref nodeLink.EntriesCount);
+                        BTreeCore.DeleteEntryWithinNode(currentNode, 
+                                                        deleteIndex, 
+                                                        ref nodeLink.EntriesCount);
 
                         if (nodeLink.EntriesCount == 1)
                         {

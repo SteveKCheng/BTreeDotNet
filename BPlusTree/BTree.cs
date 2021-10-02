@@ -239,9 +239,14 @@ namespace BPlusTree
             _root.EntriesCount = 0;
 
             if (Depth == 0)
+            {
                 AsLeafNode(_root.Child!).AsSpan().Clear();
+            }
             else
+            {
+                Depth = 0;
                 _root.Child = new Entry<TKey, TValue>[Order];
+            }
         }
 
         public bool Contains(KeyValuePair<TKey, TValue> item)

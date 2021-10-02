@@ -1,131 +1,12 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace BPlusTree
 {
-    /// <summary>
-    /// Records the path from the root node to the leaf node
-    /// inside <see cref="BTree{TKey, TValue}" />.
-    /// </summary>
-    /// <remarks>
-    /// This structure is used as an "iterator" to the B+Tree.
-    /// </remarks>
-    internal struct BTreePath : IDisposable
-    {
-        /// <summary>
-        /// The B+Tree that this path applies to.
-        /// </summary>
-        private object? _owner;
-
-        /// <summary>
-        /// Each step along the path.
-        /// </summary>
-        /// <remarks>
-        /// Step 0 selects an entry in the root node,
-        /// Step 1 selects an entry in the B+Tree of level 1,
-        /// and so forth, until step N (N = <see cref="Depth" />) 
-        /// selects an entry in the leaf node.
-        /// </remarks>
-        internal BTreeStep[] Steps { get; }
-
-        /// <summary>
-        /// The depth of the B+Tree.
-        /// </summary>
-        /// <remarks>
-        /// The depth, as a number, is the number of layers
-        /// in the B+Tree before the layer of leaf nodes.
-        /// 0 means there is only the root node, or the B+Tree 
-        /// is completely empty.  
-        /// </remarks>
-        internal int Depth { get; }
-
-        internal BTreePath(object? owner, BTreeStep[] steps, int depth)
-        {
-            _owner = owner;
-            Steps = steps;
-            Depth = depth;
-        }
-
-        public void Dispose()
-        {
-            ArrayPool<BTreeStep>.Shared.Return(Steps);
-            this = default;
-        }
-    }
-
-    internal struct BTreeStep
-    {
-        public object? Node;
-        public int Index;
-
-        public BTreeStep(object node, int index)
-        {
-            Node = node;
-            Index = index;
-        }
-    }
-
-    /// <summary>
-    /// The data associated with a key in an internal node
-    /// in <see cref="BTree{TKey, TValue}"/>. 
-    /// </summary>
-    internal struct NodeLink
-    {
-        /// <summary>
-        /// Link to a child node of the internal node that contains this value.
-        /// </summary>
-        /// <remarks>
-        /// This node is to be followed when the key being sought for compares
-        /// greater (and not equal) to the key associated to this value.
-        /// </remarks>
-        public object? Child;
-
-        public int EntriesCount;
-
-        public NodeLink(object child, int count)
-        {
-            Child = child;
-            EntriesCount = count;
-        }
-    }
-
-    /// <summary>
-    /// An entry within a node in <see cref="BTree{TKey, TValue}"/>.
-    /// </summary>
-    /// <remarks>
-    /// Semantically this structure is no different than
-    /// <see cref="KeyValuePair{TKey, TValue}" />, but the key
-    /// and value are defined as public fields rather than properties,
-    /// so the implementation of <see cref="BTree{TKey, TValue}" />
-    /// can take references to them.  For internal nodes,
-    /// <typeparamref name="TValue" /> is <see cref="NodeLink" />.
-    /// </remarks>
-    internal struct Entry<TKey, TValue>
-    {
-        /// <summary>
-        /// The key to this entry in the node of the B+Tree. 
-        /// </summary>
-        /// <remarks>
-        /// For internal nodes, the node being linked to from
-        /// <see cref="Value" /> has keys which compare greater
-        /// than (and not equal to) this key.
-        /// </remarks>
-        public TKey Key;
-
-        /// <summary>
-        /// The value or data item associated with the key.
-        /// </summary>
-        public TValue Value;
-
-        public Entry(TKey key, TValue value)
-        {
-            Key = key;
-            Value = value;
-        }
-    }
-
     /// <summary>
     /// Implementation logic for <see cref="BTree{TKey, TValue}"/>
     /// that is independent of the type of value.
@@ -246,7 +127,7 @@ namespace BPlusTree
     /// <typeparam name="TKey">The type of the look-up key. </typeparam>
     /// <typeparam name="TValue">The type of the data value associated to each 
     /// key. </typeparam>
-    public partial class BTree<TKey, TValue> : BTreeBase<TKey>
+    public partial class BTree<TKey, TValue> : BTreeBase<TKey>, IDictionary<TKey, TValue>
     {
         /// <summary>
         /// Construct an empty B+Tree.
@@ -279,6 +160,12 @@ namespace BPlusTree
         /// The number of data items inside the B+Tree.
         /// </summary>
         public int Count { get; private set; }
+
+        public ICollection<TKey> Keys => throw new NotImplementedException();
+
+        public ICollection<TValue> Values => throw new NotImplementedException();
+
+        public bool IsReadOnly => false;
 
         /// <summary>
         /// Search for where a key could be found or inserted in the B+Tree,
@@ -381,6 +268,78 @@ namespace BPlusTree
             }
 
             return ref Unsafe.NullRef<Entry<TKey, TValue>>();
+        }
+
+        public bool ContainsKey(TKey key)
+        {
+            return TryGetValue(key, out _);
+        }
+
+        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
+        {
+            var path = NewPath();
+            try
+            {
+                ref var entry = ref FindEntry(ref path, key);
+                if (Unsafe.IsNullRef(ref entry))
+                {
+                    value = default;
+                    return false;
+                }
+
+                value = entry.Value;
+                return true;
+            }
+            finally
+            {
+                path.Dispose();
+            }
+        }
+
+        public void Add(KeyValuePair<TKey, TValue> item)
+        {
+            Add(item.Key, item.Value);
+        }
+
+        public void Clear()
+        {
+            Count = 0;
+            _root.EntriesCount = 0;
+
+            if (Depth == 0)
+                AsLeafNode(_root.Child!).AsSpan().Clear();
+            else
+                _root.Child = new Entry<TKey, TValue>[Order];
+        }
+
+        public bool Contains(KeyValuePair<TKey, TValue> item)
+        {
+            // FIXME We need to scan the whole range if there is more than one item
+            // with the same key
+            if (TryGetValue(item.Key, out var value))
+                return EqualityComparer<TValue>.Default.Equals(item.Value, value);
+
+            return false;
+        }
+
+        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool Remove(KeyValuePair<TKey, TValue> item)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
+        {
+            throw new NotImplementedException();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>

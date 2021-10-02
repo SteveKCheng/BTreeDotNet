@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 namespace BPlusTree
@@ -486,7 +485,7 @@ namespace BPlusTree
             Count--;
         }
 
-        public bool TryRemove(TKey key)
+        public bool Remove(TKey key)
         {
             var path = NewPath();
             try
@@ -502,12 +501,6 @@ namespace BPlusTree
             {
                 path.Dispose();
             }
-        }
-
-        public void Remove(TKey key)
-        {
-            if (!TryRemove(key))
-                throw new KeyNotFoundException($"The key {key} is not found in the B+Tree. ");
         }
     }
 }

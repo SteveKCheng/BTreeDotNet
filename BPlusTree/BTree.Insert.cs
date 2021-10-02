@@ -132,7 +132,7 @@ namespace BPlusTree
         }
     }
 
-    public partial class BTree<TKey, TValue> : BTreeBase<TKey>
+    public partial class BTree<TKey, TValue>
     {
         /// <summary>
         /// Insert an entry into the B+Tree by following a previously discovered path,

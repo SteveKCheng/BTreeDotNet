@@ -7,40 +7,6 @@ using System.Runtime.CompilerServices;
 
 namespace BPlusTree
 {
-    public partial class BTreeBase<TKey>
-    {
-        /// <summary>
-        /// A partial ordering of keys that can be evaluated for any two keys.
-        /// </summary>
-        public IComparer<TKey> KeyComparer { get; }
-
-        internal BTreeBase(int order,
-                           IComparer<TKey> keyComparer)
-        {
-            if (order < 0 || (order & 1) != 0)
-                throw new ArgumentOutOfRangeException(nameof(order), "The order of the B+Tree must be a positive even number. ");
-            if (order > 32768)
-                throw new ArgumentOutOfRangeException(nameof(order), "The order of the B+Tree may not exceed 32768. ");
-
-            KeyComparer = keyComparer ?? throw new ArgumentNullException(nameof(keyComparer));
-        }
-
-        /// <summary>
-        /// The branching factor of the B+Tree, or its "order".
-        /// </summary>
-        /// <remarks>
-        /// This is the number of keys held in each node.  
-        /// This implementation requires it to be even.
-        /// </remarks>
-        public int Order { get; }
-
-        /// <summary>
-        /// Points to the root node of the B+Tree.
-        /// </summary>
-        internal NodeLink _root;
-
-    }
-
     /// <summary>
     /// A B+Tree held entirely in managed memory.
     /// </summary>
@@ -67,8 +33,27 @@ namespace BPlusTree
     /// <typeparam name="TKey">The type of the look-up key. </typeparam>
     /// <typeparam name="TValue">The type of the data value associated to each 
     /// key. </typeparam>
-    public partial class BTree<TKey, TValue> : BTreeBase<TKey>, IDictionary<TKey, TValue>
+    public partial class BTree<TKey, TValue> : IDictionary<TKey, TValue>
     {
+        /// <summary>
+        /// A partial ordering of keys that can be evaluated for any two keys.
+        /// </summary>
+        public IComparer<TKey> KeyComparer { get; }
+
+        /// <summary>
+        /// The branching factor of the B+Tree, or its "order".
+        /// </summary>
+        /// <remarks>
+        /// This is the number of keys held in each node.  
+        /// This implementation requires it to be even.
+        /// </remarks>
+        public int Order { get; }
+
+        /// <summary>
+        /// Points to the root node of the B+Tree.
+        /// </summary>
+        private NodeLink _root;
+
         /// <summary>
         /// Construct an empty B+Tree.
         /// </summary>
@@ -78,8 +63,15 @@ namespace BPlusTree
         /// An ordering used to arrange the look-up keys in the B+Tree.
         /// </param>
         public BTree(int order, IComparer<TKey> keyComparer)
-            : base(order, keyComparer)
         {
+            if (order < 0 || (order & 1) != 0)
+                throw new ArgumentOutOfRangeException(nameof(order), "The order of the B+Tree must be a positive even number. ");
+            if (order > 32768)
+                throw new ArgumentOutOfRangeException(nameof(order), "The order of the B+Tree may not exceed 32768. ");
+
+            KeyComparer = keyComparer ?? throw new ArgumentNullException(nameof(keyComparer));
+            Order = order;
+
             // Always create an empty root node so we do not have to
             // check for the root node being null everywhere.
             _root = new NodeLink(new Entry<TKey, TValue>[order], 0);

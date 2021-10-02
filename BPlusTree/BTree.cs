@@ -65,10 +65,11 @@ namespace BPlusTree
         /// at index 1: thus a "lower bound" search on internal nodes yields the index to 
         /// follow down the B+Tree.
         /// </returns>
-        internal int SearchKeyWithinNode<TValue>(TKey key, 
-                                                 bool forUpperBound, 
-                                                 Entry<TKey, TValue>[] entries, 
-                                                 int numEntries)
+        internal static int SearchKeyWithinNode<TValue>(IComparer<TKey> keyComparer,
+                                                        TKey key, 
+                                                        bool forUpperBound, 
+                                                        Entry<TKey, TValue>[] entries, 
+                                                        int numEntries)
         {
             // Keys in internal nodes are stored starting from index 1,
             // but we still return 0-based index
@@ -84,7 +85,7 @@ namespace BPlusTree
                 // B+Tree order is capped so this index calculation cannot overflow
                 int mid = (left + right) >> 1;
 
-                var comparison = KeyComparer.Compare(entries[mid].Key, key);
+                var comparison = keyComparer.Compare(entries[mid].Key, key);
                 if (comparison < 0 || (forUpperBound && (comparison == 0)))
                     left = mid + 1;
                 else
@@ -188,14 +189,14 @@ namespace BPlusTree
             for (int level = 0; level < depth; ++level)
             {
                 var internalNode = AsInteriorNode(currentLink.Child!);
-                index = SearchKeyWithinNode(key, forUpperBound, internalNode, currentLink.EntriesCount);
+                index = SearchKeyWithinNode(KeyComparer, key, forUpperBound, internalNode, currentLink.EntriesCount);
 
                 path.Steps[level] = new BTreeStep(internalNode, index);
                 currentLink = internalNode[index].Value;
             }
 
             var leafNode = AsLeafNode(currentLink.Child!);
-            index = SearchKeyWithinNode(key, forUpperBound, leafNode, currentLink.EntriesCount);
+            index = SearchKeyWithinNode(KeyComparer, key, forUpperBound, leafNode, currentLink.EntriesCount);
 
             path.Steps[depth] = new BTreeStep(leafNode, index);
         }

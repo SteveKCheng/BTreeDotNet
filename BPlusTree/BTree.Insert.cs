@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace BPlusTree
 {
-    public partial class BTreeBase<TKey>
+    internal static partial class BTreeCore
     {
         /// <summary>
         /// Insert an entry into a node, reporting the entry to add
@@ -35,12 +35,12 @@ namespace BPlusTree
         /// Whether the node to insert into has to be split into two
         /// because it has no more slots for entries.
         /// </returns>
-        internal static bool InsertWithinNode<TValue>(TKey key,
-                                                      TValue value,
-                                                      Entry<TKey, TValue>[] node,
-                                                      ref int numEntries,
-                                                      int index,
-                                                      out Entry<TKey, NodeLink> addToParent)
+        public static bool InsertWithinNode<TKey, TValue>(TKey key,
+                                                          TValue value,
+                                                          Entry<TKey, TValue>[] node,
+                                                          ref int numEntries,
+                                                          int index,
+                                                          out Entry<TKey, NodeLink> addToParent)
         {
             var entries = node.AsSpan();
             var newEntry = new Entry<TKey, TValue>(key, value);
@@ -154,9 +154,9 @@ namespace BPlusTree
             ref var leafEntriesCount = ref GetNodeEntriesCount(ref path, level);
             ref var leafStep = ref path.Steps[level];
             var leafNode = AsLeafNode(leafStep.Node!);
-            if (!InsertWithinNode(key, value,
-                                  leafNode, ref leafEntriesCount, leafStep.Index,
-                                  out var addToParent))
+            if (!BTreeCore.InsertWithinNode(key, value,
+                                            leafNode, ref leafEntriesCount, leafStep.Index,
+                                            out var addToParent))
                 goto done;
 
             // Loop and insert into successive parents if nodes need to split
@@ -168,9 +168,9 @@ namespace BPlusTree
                 ref var internalStep = ref path.Steps[level];
                 var internalNode = BTreeCore.AsInteriorNode<TKey>(internalStep.Node!);
 
-                if (!InsertWithinNode(addToParent.Key, addToParent.Value,
-                                      internalNode, ref internalEntriesCount, internalStep.Index + 1,
-                                      out addToParent))
+                if (!BTreeCore.InsertWithinNode(addToParent.Key, addToParent.Value,
+                                                internalNode, ref internalEntriesCount, internalStep.Index + 1,
+                                                out addToParent))
                     goto done;
             };
 

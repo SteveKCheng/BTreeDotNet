@@ -166,7 +166,7 @@ namespace BPlusTree
 
                 ref var internalEntriesCount = ref GetNodeEntriesCount(ref path, level);
                 ref var internalStep = ref path.Steps[level];
-                var internalNode = AsInteriorNode(internalStep.Node!);
+                var internalNode = BTreeCore.AsInteriorNode<TKey>(internalStep.Node!);
 
                 if (!InsertWithinNode(addToParent.Key, addToParent.Value,
                                       internalNode, ref internalEntriesCount, internalStep.Index + 1,

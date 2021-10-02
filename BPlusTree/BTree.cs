@@ -7,11 +7,6 @@ using System.Runtime.CompilerServices;
 
 namespace BPlusTree
 {
-    /// <summary>
-    /// Implementation logic for <see cref="BTree{TKey, TValue}"/>
-    /// that is independent of the type of value.
-    /// </summary>
-    /// <typeparam name="TKey">The type of look-up key in the B+Tree. </typeparam>
     public partial class BTreeBase<TKey>
     {
         /// <summary>
@@ -44,62 +39,6 @@ namespace BPlusTree
         /// </summary>
         internal NodeLink _root;
 
-        /// <summary>
-        /// Find the index within a node where an entry can be inserted for the given key.
-        /// </summary>
-        /// <typeparam name="TValue">The type of data value to insert along with the key. 
-        /// Must be <see cref="NodeLink"/> for internal nodes.
-        /// </typeparam>
-        /// <param name="key">The key to search for. </param>
-        /// <param name="forUpperBound">If false, this method returns the "lower bound" index.
-        /// If true, this method returns the "upper bound" index.
-        /// </param>
-        /// <param name="entries">The entries in the node. </param>
-        /// <param name="numEntries">The number of active entries in the node. </param>
-        /// <returns>
-        /// For "lower bound": the first index where an entry with the given key, 
-        /// or a preceding key, can be inserted without violating ordering.  For 
-        /// "upper bound": the first index where an entry with a following (greater) key 
-        /// can be inserted without violating ordering. For internal nodes, the index is 
-        /// shifted down by one, so it starts from 0 while the keys are stored starting 
-        /// at index 1: thus a "lower bound" search on internal nodes yields the index to 
-        /// follow down the B+Tree.
-        /// </returns>
-        internal static int SearchKeyWithinNode<TValue>(IComparer<TKey> keyComparer,
-                                                        TKey key, 
-                                                        bool forUpperBound, 
-                                                        Entry<TKey, TValue>[] entries, 
-                                                        int numEntries)
-        {
-            // Keys in internal nodes are stored starting from index 1,
-            // but we still return 0-based index
-            int shift = (typeof(TValue) == typeof(NodeLink)) ? 1 : 0;
-
-            // The closed interval [left,right] brackets the returned index
-            int left = shift;
-            int right = numEntries;
-
-            // Bisect until the interval brackets only one choice of index
-            while (left != right)
-            {
-                // B+Tree order is capped so this index calculation cannot overflow
-                int mid = (left + right) >> 1;
-
-                var comparison = keyComparer.Compare(entries[mid].Key, key);
-                if (comparison < 0 || (forUpperBound && (comparison == 0)))
-                    left = mid + 1;
-                else
-                    right = mid;
-            }
-
-            return left - shift;
-        }
-
-        /// <summary>
-        /// Cast an object reference as an interior (non-leaf) node of the B+Tree.
-        /// </summary>
-        internal static Entry<TKey, NodeLink>[] AsInteriorNode(object node)
-            => (Entry<TKey, NodeLink>[])node;
     }
 
     /// <summary>
@@ -174,7 +113,7 @@ namespace BPlusTree
         /// </summary>
         /// <param name="key">The key to look for. </param>
         /// <param name="forUpperBound">Whether to return the "lower bound"
-        /// or "upper bound" index.  See <see cref="BTreeBase{TKey}.SearchKeyWithinNode{TValue}" />.
+        /// or "upper bound" index.  See <see cref="BTreeBase{TKey}.BTreeCore.SearchKeyWithinNode{TValue}" />.
         /// </param>
         /// <param name="path">
         /// On successful return, this method records the path to follow here.
@@ -188,15 +127,15 @@ namespace BPlusTree
 
             for (int level = 0; level < depth; ++level)
             {
-                var internalNode = AsInteriorNode(currentLink.Child!);
-                index = SearchKeyWithinNode(KeyComparer, key, forUpperBound, internalNode, currentLink.EntriesCount);
+                var internalNode = BTreeCore.AsInteriorNode<TKey>(currentLink.Child!);
+                index = BTreeCore.SearchKeyWithinNode(KeyComparer, key, forUpperBound, internalNode, currentLink.EntriesCount);
 
                 path.Steps[level] = new BTreeStep(internalNode, index);
                 currentLink = internalNode[index].Value;
             }
 
             var leafNode = AsLeafNode(currentLink.Child!);
-            index = SearchKeyWithinNode(KeyComparer, key, forUpperBound, leafNode, currentLink.EntriesCount);
+            index = BTreeCore.SearchKeyWithinNode(KeyComparer, key, forUpperBound, leafNode, currentLink.EntriesCount);
 
             path.Steps[depth] = new BTreeStep(leafNode, index);
         }
@@ -225,7 +164,7 @@ namespace BPlusTree
             if (level > 0)
             {
                 ref var parentStep = ref path.Steps[level - 1];
-                var parentNode = AsInteriorNode(parentStep.Node!);
+                var parentNode = BTreeCore.AsInteriorNode<TKey>(parentStep.Node!);
                 return ref parentNode[parentStep.Index].Value.EntriesCount;
             }
             else

@@ -390,7 +390,7 @@ namespace BPlusTree
             // This level of the B+Tree holds interior nodes. 
             else
             {
-                var currentNode = AsInteriorNode(nodeLink.Child!);
+                var currentNode = BTreeCore.AsInteriorNode<TKey>(nodeLink.Child!);
 
                 // Compute the left neighbor for the node one level down the path.
                 // It is the left sibling if one exists.  If not, then it is found
@@ -400,7 +400,7 @@ namespace BPlusTree
                 ref NodeLink nextLeftNeighbor = ref (
                     deleteIndex > 0 ? ref currentNode[deleteIndex - 1].Value :
                     ref (!Unsafe.IsNullRef(ref leftNeighbor)
-                        ? ref AsInteriorNode(leftNeighbor.Child!)[leftNeighbor.EntriesCount - 1].Value
+                        ? ref BTreeCore.AsInteriorNode<TKey>(leftNeighbor.Child!)[leftNeighbor.EntriesCount - 1].Value
                         : ref Unsafe.NullRef<NodeLink>())
                 );
 
@@ -412,7 +412,7 @@ namespace BPlusTree
                 ref NodeLink nextRightNeigbor = ref (
                     deleteIndex + 1 < nodeLink.EntriesCount ? ref currentNode[deleteIndex + 1].Value :
                     ref (!Unsafe.IsNullRef(ref rightNeighbor)
-                        ? ref AsInteriorNode(rightNeighbor.Child!)[0].Value
+                        ? ref BTreeCore.AsInteriorNode<TKey>(rightNeighbor.Child!)[0].Value
                         : ref Unsafe.NullRef<NodeLink>())
                 );
 

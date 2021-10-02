@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
 namespace BPlusTree
 {
@@ -34,12 +35,12 @@ namespace BPlusTree
         /// Whether the node to insert into has to be split into two
         /// because it has no more slots for entries.
         /// </returns>
-        internal bool InsertWithinNode<TValue>(TKey key,
-                                               TValue value,
-                                               Entry<TKey, TValue>[] node,
-                                               ref int numEntries,
-                                               int index,
-                                               out Entry<TKey, NodeLink> addToParent)
+        internal static bool InsertWithinNode<TValue>(TKey key,
+                                                      TValue value,
+                                                      Entry<TKey, TValue>[] node,
+                                                      ref int numEntries,
+                                                      int index,
+                                                      out Entry<TKey, NodeLink> addToParent)
         {
             var entries = node.AsSpan();
             var newEntry = new Entry<TKey, TValue>(key, value);
@@ -156,7 +157,7 @@ namespace BPlusTree
             if (!InsertWithinNode(key, value,
                                   leafNode, ref leafEntriesCount, leafStep.Index,
                                   out var addToParent))
-                return;
+                goto done;
 
             // Loop and insert into successive parents if nodes need to split
             while (level > 0)
@@ -165,22 +166,65 @@ namespace BPlusTree
 
                 ref var internalEntriesCount = ref GetNodeEntriesCount(ref path, level);
                 ref var internalStep = ref path.Steps[level];
-                var internalNode = AsInternalNode(internalStep.Node!);
+                var internalNode = AsInteriorNode(internalStep.Node!);
 
                 if (!InsertWithinNode(addToParent.Key, addToParent.Value,
                                       internalNode, ref internalEntriesCount, internalStep.Index + 1,
                                       out addToParent))
-                    return;
+                    goto done;
             };
 
             // Root node needs to split
-            var newRootNode = new Entry<TKey, NodeLink>[Order + 1];
-            newRootNode[0].Value = _root;
-            newRootNode[1] = addToParent;
-            _root = new NodeLink(newRootNode, 2);
-            Depth++;
+            {
+                var newRootNode = new Entry<TKey, NodeLink>[Order + 1];
+                newRootNode[0].Value = _root;
+                newRootNode[1] = addToParent;
+                _root = new NodeLink(newRootNode, 2);
+                Depth++;
+            }
+
+        done:
+            Count++;
         }
 
+        /// <summary>
+        /// Add an item to the B+Tree if another item of the same key is not
+        /// already present.
+        /// </summary>
+        /// <param name="key">The key of the item to add. </param>
+        /// <param name="value">The associated value of the item to add. </param>
+        /// <returns>
+        /// True if the key does not already exist in the B+Tree, and the
+        /// specified item has just been inserted.  False if another item
+        /// in the B+Tree already has the specified key.
+        /// </returns>
+        public bool TryAdd(TKey key, TValue value)
+        {
+            var path = NewPath();
+            try
+            {
+                if (!Unsafe.IsNullRef(ref FindEntry(ref path, key)))
+                    return false;
+                    
+                Insert(key, value, ref path);
+                return true;
+            }
+            finally
+            {
+                path.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Add an item to the B+Tree whose key is not already present.
+        /// </summary>
+        /// <param name="key">The key of the item to add. </param>
+        /// <param name="value">The associated value of the item to add. </param>
+        public void Add(TKey key, TValue value)
+        {
+            if (!TryAdd(key, value))
+                throw new InvalidOperationException("There is already an entry with the same key as the entry to add in the B+Tree. ");
+        }
     }
 }
 

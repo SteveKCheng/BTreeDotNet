@@ -11,13 +11,15 @@ namespace BPlusTree
         /// of entries remaining.
         /// </summary>
         /// <param name="node">The node to delete the entry from. </param>
-        /// <param name="index">The index of the entry to delete. </param>
+        /// <param name="deleteIndex">The index of the entry to delete. </param>
         /// <param name="numEntries">The variable holding the number of active entries
         /// in the node; it will be decremented by one. </param>
-        internal void DeleteEntryWithinNode<TValue>(Entry<TKey, TValue>[] node, int index, ref int numEntries)
+        internal static void DeleteEntryWithinNode<TValue>(Entry<TKey, TValue>[] node, 
+                                                           int deleteIndex, 
+                                                           ref int numEntries)
         {
             var entries = node.AsSpan();
-            entries[(index + 1)..numEntries].CopyTo(entries[index..]);
+            entries[(deleteIndex + 1)..numEntries].CopyTo(entries[deleteIndex..]);
             entries[--numEntries] = default;
         }
 
@@ -62,14 +64,14 @@ namespace BPlusTree
         /// time the old pivot key will be demoted and stored into either
         /// the left or right node.  
         /// </param>
-        internal void DeleteEntryAndShift<TValue>(Entry<TKey, TValue>[] leftNode,
-                                                  Entry<TKey, TValue>[] rightNode,
-                                                  ref int leftEntriesCount,
-                                                  ref int rightEntriesCount,
-                                                  ref TKey pivotKey,
-                                                  int deleteIndex,
-                                                  int shiftIndex,
-                                                  bool deleteFromLeft)
+        internal static void DeleteEntryAndShift<TValue>(Entry<TKey, TValue>[] leftNode,
+                                                         Entry<TKey, TValue>[] rightNode,
+                                                         ref int leftEntriesCount,
+                                                         ref int rightEntriesCount,
+                                                         ref TKey pivotKey,
+                                                         int deleteIndex,
+                                                         int shiftIndex,
+                                                         bool deleteFromLeft)
         {
             var leftEntries = leftNode.AsSpan();
             var rightEntries = rightNode.AsSpan();
@@ -215,13 +217,13 @@ namespace BPlusTree
         /// Whether the entry for the current node needs to be deleted
         /// from its parent, because it has merged with a neighbor.
         /// </returns>
-        internal bool DeleteEntryAndRebalanceOneLevel<TValue>(int deleteIndex,
-                                                              ref NodeLink nodeLink,
-                                                              ref NodeLink leftNeighbor,
-                                                              ref NodeLink rightNeighbor,
-                                                              ref TKey leftPivotKey,
-                                                              ref TKey rightPivotKey,
-                                                              bool leftNeighborHasSameParent)
+        internal static bool DeleteEntryAndRebalanceOneLevel<TValue>(int deleteIndex,
+                                                                     ref NodeLink nodeLink,
+                                                                     ref NodeLink leftNeighbor,
+                                                                     ref NodeLink rightNeighbor,
+                                                                     ref TKey leftPivotKey,
+                                                                     ref TKey rightPivotKey,
+                                                                     bool leftNeighborHasSameParent)
         {
             ref var numEntries = ref nodeLink.EntriesCount;
             var currentNode = (Entry<TKey, TValue>[])nodeLink.Child!;
@@ -389,7 +391,7 @@ namespace BPlusTree
             // This level of the B+Tree holds interior nodes. 
             else
             {
-                var currentNode = AsInternalNode(nodeLink.Child!);
+                var currentNode = AsInteriorNode(nodeLink.Child!);
 
                 // Compute the left neighbor for the node one level down the path.
                 // It is the left sibling if one exists.  If not, then it is found
@@ -399,7 +401,7 @@ namespace BPlusTree
                 ref NodeLink nextLeftNeighbor = ref (
                     deleteIndex > 0 ? ref currentNode[deleteIndex - 1].Value :
                     ref (!Unsafe.IsNullRef(ref leftNeighbor)
-                        ? ref AsInternalNode(leftNeighbor.Child!)[leftNeighbor.EntriesCount - 1].Value
+                        ? ref AsInteriorNode(leftNeighbor.Child!)[leftNeighbor.EntriesCount - 1].Value
                         : ref Unsafe.NullRef<NodeLink>())
                 );
 
@@ -411,7 +413,7 @@ namespace BPlusTree
                 ref NodeLink nextRightNeigbor = ref (
                     deleteIndex + 1 < nodeLink.EntriesCount ? ref currentNode[deleteIndex + 1].Value :
                     ref (!Unsafe.IsNullRef(ref rightNeighbor)
-                        ? ref AsInternalNode(rightNeighbor.Child!)[0].Value
+                        ? ref AsInteriorNode(rightNeighbor.Child!)[0].Value
                         : ref Unsafe.NullRef<NodeLink>())
                 );
 
@@ -481,23 +483,31 @@ namespace BPlusTree
                                                ref Unsafe.NullRef<TKey>(),
                                                ref Unsafe.NullRef<TKey>(),
                                                false);
+            Count--;
         }
 
-        public void Remove(TKey key)
+        public bool TryRemove(TKey key)
         {
             var path = NewPath();
             try
             {
                 ref var entry = ref FindEntry(ref path, key);
                 if (Unsafe.IsNullRef(ref entry))
-                    throw new KeyNotFoundException($"The key {key} is not found in the B+Tree. ");
+                    return false;
 
                 DeleteAtPath(ref path);
+                return true;
             }
             finally
             {
                 path.Dispose();
             }
+        }
+
+        public void Remove(TKey key)
+        {
+            if (!TryRemove(key))
+                throw new KeyNotFoundException($"The key {key} is not found in the B+Tree. ");
         }
     }
 }

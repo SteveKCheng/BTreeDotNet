@@ -7,8 +7,11 @@ namespace BPlusTree
 {
     /// <summary>
     /// Records the path from the root node to the leaf node
-    /// inside <see cref="BTree{TKey, TValue}"/>.
+    /// inside <see cref="BTree{TKey, TValue}" />.
     /// </summary>
+    /// <remarks>
+    /// This structure is used as an "iterator" to the B+Tree.
+    /// </remarks>
     internal struct BTreePath : IDisposable
     {
         /// <summary>
@@ -123,15 +126,36 @@ namespace BPlusTree
         }
     }
 
+    /// <summary>
+    /// Implementation logic for <see cref="BTree{TKey, TValue}"/>
+    /// that is independent of the type of value.
+    /// </summary>
+    /// <typeparam name="TKey">The type of look-up key in the B+Tree. </typeparam>
     public partial class BTreeBase<TKey>
     {
-        protected readonly IComparer<TKey> _keyComparer;
+        /// <summary>
+        /// A partial ordering of keys that can be evaluated for any two keys.
+        /// </summary>
+        public IComparer<TKey> KeyComparer { get; }
 
-        internal BTreeBase(IComparer<TKey> keyComparer)
+        internal BTreeBase(int order,
+                           IComparer<TKey> keyComparer)
         {
-            _keyComparer = keyComparer;
+            if (order < 0 || (order & 1) != 0)
+                throw new ArgumentOutOfRangeException(nameof(order), "The order of the B+Tree must be a positive even number. ");
+            if (order > 32768)
+                throw new ArgumentOutOfRangeException(nameof(order), "The order of the B+Tree may not exceed 32768. ");
+
+            KeyComparer = keyComparer ?? throw new ArgumentNullException(nameof(keyComparer));
         }
 
+        /// <summary>
+        /// The branching factor of the B+Tree, or its "order".
+        /// </summary>
+        /// <remarks>
+        /// This is the number of keys held in each node.  
+        /// This implementation requires it to be even.
+        /// </remarks>
         public int Order { get; }
 
         /// <summary>
@@ -179,7 +203,7 @@ namespace BPlusTree
                 // B+Tree order is capped so this index calculation cannot overflow
                 int mid = (left + right) >> 1;
 
-                var comparison = _keyComparer.Compare(entries[mid].Key, key);
+                var comparison = KeyComparer.Compare(entries[mid].Key, key);
                 if (comparison < 0 || (forUpperBound && (comparison == 0)))
                     left = mid + 1;
                 else
@@ -189,15 +213,55 @@ namespace BPlusTree
             return left - shift;
         }
 
-        internal static Entry<TKey, NodeLink>[] AsInternalNode(object node)
+        /// <summary>
+        /// Cast an object reference as an interior (non-leaf) node of the B+Tree.
+        /// </summary>
+        internal static Entry<TKey, NodeLink>[] AsInteriorNode(object node)
             => (Entry<TKey, NodeLink>[])node;
     }
 
+    /// <summary>
+    /// A B+Tree held entirely in managed memory.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The B+Tree is a well-known generalization of binary search trees
+    /// with a branching factor that may be greater than 2. 
+    /// On modern computer architectures where sequentially memory accesses are faster
+    /// than random access, B+Trees work better than binary search trees.  B+Tree also
+    /// incur less overhead from inter-node links.
+    /// </para>
+    /// <para>
+    /// This implementation tries hard to minimize object allocations, even at the
+    /// expense of internal complexity.  In particular, nodes are simple arrays
+    /// of key-value pairs.
+    /// </para>
+    /// <para>
+    /// Addition and removal of entries take O(Depth) running time,
+    /// where Depth is the depth of the B+Tree, which is approximately log_B(N) for N
+    /// being the number of entries in the B+Tree and B being the branching factor (order).
+    /// Items with duplicate keys may be placed in the B+Tree.
+    /// </para>
+    /// </remarks>
+    /// <typeparam name="TKey">The type of the look-up key. </typeparam>
+    /// <typeparam name="TValue">The type of the data value associated to each 
+    /// key. </typeparam>
     public partial class BTree<TKey, TValue> : BTreeBase<TKey>
     {
-        public BTree(IComparer<TKey> keyComparer)
-            : base(keyComparer)
+        /// <summary>
+        /// Construct an empty B+Tree.
+        /// </summary>
+        /// <param name="order">The desired order of the B+Tree. 
+        /// </param>
+        /// <param name="keyComparer">
+        /// An ordering used to arrange the look-up keys in the B+Tree.
+        /// </param>
+        public BTree(int order, IComparer<TKey> keyComparer)
+            : base(order, keyComparer)
         {
+            // Always create an empty root node so we do not have to
+            // check for the root node being null everywhere.
+            _root = new NodeLink(new Entry<TKey, TValue>[order], 0);
         }
 
         /// <summary>
@@ -210,6 +274,11 @@ namespace BPlusTree
         /// is completely empty.  
         /// </remarks>
         public int Depth { get; private set; }
+
+        /// <summary>
+        /// The number of data items inside the B+Tree.
+        /// </summary>
+        public int Count { get; private set; }
 
         /// <summary>
         /// Search for where a key could be found or inserted in the B+Tree,
@@ -231,7 +300,7 @@ namespace BPlusTree
 
             for (int level = 0; level < depth; ++level)
             {
-                var internalNode = AsInternalNode(currentLink.Child!);
+                var internalNode = AsInteriorNode(currentLink.Child!);
                 index = SearchKeyWithinNode(key, forUpperBound, internalNode, currentLink.EntriesCount);
 
                 path.Steps[level] = new BTreeStep(internalNode, index);
@@ -244,10 +313,12 @@ namespace BPlusTree
             path.Steps[depth] = new BTreeStep(leafNode, index);
         }
         
+        /// <summary>
+        /// Cast an object reference as a leaf node.
+        /// </summary>
         private static Entry<TKey, TValue>[] AsLeafNode(object node)
             => (Entry<TKey, TValue>[])node;
 
-        
         /// <summary>
         /// Get a reference to the variable that stores the number of non-empty
         /// entries in a node.
@@ -266,7 +337,7 @@ namespace BPlusTree
             if (level > 0)
             {
                 ref var parentStep = ref path.Steps[level - 1];
-                var parentNode = AsInternalNode(parentStep.Node!);
+                var parentNode = AsInteriorNode(parentStep.Node!);
                 return ref parentNode[parentStep.Index].Value.EntriesCount;
             }
             else
@@ -275,24 +346,17 @@ namespace BPlusTree
             }
         }
 
+        /// <summary>
+        /// Create a new instance of the structure used to record a path
+        /// through the B+Tree.
+        /// </summary>
+        /// <remarks>
+        /// The array used to record the path is pooled.
+        /// </remarks>
         private BTreePath NewPath()
         {
             var steps = ArrayPool<BTreeStep>.Shared.Rent(Depth + 1);
             return new BTreePath(this, steps, Depth);
-        }
-
-        public void Add(TKey key, TValue value)
-        {
-            var path = NewPath();
-            try
-            {
-                FindKey(key, false, ref path);
-                Insert(key, value, ref path);
-            }
-            finally
-            {
-                path.Dispose();
-            }
         }
 
         /// <summary>
@@ -312,13 +376,18 @@ namespace BPlusTree
             {
                 var leafNode = AsLeafNode(step.Node!);
                 ref var entry = ref leafNode[step.Index];
-                if (_keyComparer.Compare(entry.Key, key) == 0)
+                if (KeyComparer.Compare(entry.Key, key) == 0)
                     return ref entry;
             }
 
             return ref Unsafe.NullRef<Entry<TKey, TValue>>();
         }
 
+        /// <summary>
+        /// Get or set a data item associated with a key.
+        /// </summary>
+        /// <param name="key">The look-up key. </param>
+        /// <returns>The data value associated with the look-up key. </returns>
         public TValue this[TKey key]
         {
             get
@@ -359,5 +428,4 @@ namespace BPlusTree
             }
         }
     }
-
 }

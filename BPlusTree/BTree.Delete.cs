@@ -98,7 +98,7 @@ namespace BPlusTree
                     movedCount = leftEntriesCount - 1;
 
                     // Make room in the right node for the entries to be shifted from the left
-                    rightEntries.CopyTo(rightEntries[movedCount..]);
+                    rightEntries[0..rightEntriesCount].CopyTo(rightEntries[movedCount..]);
 
                     // Move all entries from the left node to the right except the one being deleted
                     leftEntries[0..deleteIndex].CopyTo(rightEntries);
@@ -117,7 +117,7 @@ namespace BPlusTree
 
                     // Make room in the right node for the entries to be shifted from
                     // the left, and at the same time delete the entry at rightIndex.
-                    rightEntries[(deleteIndex + 1)..].CopyTo(rightEntries[(movedCount + deleteIndex)..]);
+                    rightEntries[(deleteIndex + 1)..rightEntriesCount].CopyTo(rightEntries[(movedCount + deleteIndex)..]);
                     rightEntries[0..deleteIndex].CopyTo(rightEntries[movedCount..]);
 
                     // Move in entries from the left node to the right node.

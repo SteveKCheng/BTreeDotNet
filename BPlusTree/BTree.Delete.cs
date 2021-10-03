@@ -76,68 +76,72 @@ namespace BPlusTree
             var rightEntries = rightNode.AsSpan();
             int movedCount;
 
+            // Copy values locally to help compiler optimize
+            int leftCount = leftEntriesCount;
+            int rightCount = rightEntriesCount;
+
             if (deleteFromLeft)
             {
                 if (shiftIndex >= 0) // delete from left and shift from right
                 {
                     // Delete entry from left
-                    leftEntries[(deleteIndex + 1)..leftEntriesCount].CopyTo(leftEntries[deleteIndex..]);
+                    leftEntries[(deleteIndex + 1)..leftCount].CopyTo(leftEntries[deleteIndex..]);
 
                     // Move entries from right to left
-                    rightEntries[0..shiftIndex].CopyTo(leftEntries[(leftEntriesCount - 1)..]);
-                    rightEntries[shiftIndex..rightEntriesCount].CopyTo(rightEntries[0..]);
-                    rightEntries[(rightEntriesCount - shiftIndex)..rightEntriesCount].Clear();
+                    rightEntries[0..shiftIndex].CopyTo(leftEntries[(leftCount - 1)..]);
+                    rightEntries[shiftIndex..rightCount].CopyTo(rightEntries[0..]);
+                    rightEntries[(rightCount - shiftIndex)..rightCount].Clear();
 
                     // Update counts
                     movedCount = shiftIndex;
-                    leftEntriesCount += movedCount - 1;
-                    rightEntriesCount -= movedCount;
+                    leftEntriesCount = (leftCount += movedCount - 1);
+                    rightEntriesCount = (rightCount -= movedCount);
                 }
                 else                 // delete from left and shift to right
                 {
-                    movedCount = leftEntriesCount - 1;
+                    movedCount = leftCount - 1;
 
                     // Make room in the right node for the entries to be shifted from the left
-                    rightEntries[0..rightEntriesCount].CopyTo(rightEntries[movedCount..]);
+                    rightEntries[0..rightCount].CopyTo(rightEntries[movedCount..]);
 
                     // Move all entries from the left node to the right except the one being deleted
                     leftEntries[0..deleteIndex].CopyTo(rightEntries);
-                    leftEntries[(deleteIndex + 1)..leftEntriesCount].CopyTo(rightEntries[deleteIndex..]);
+                    leftEntries[(deleteIndex + 1)..leftCount].CopyTo(rightEntries[deleteIndex..]);
 
                     // Update counts
-                    leftEntriesCount = 0;
-                    rightEntriesCount += movedCount;
+                    leftEntriesCount = (leftCount = 0);
+                    rightEntriesCount = (rightCount += movedCount);
                 }
             }
             else
             {
                 if (shiftIndex >= 0) // delete from right and shift from left
                 {
-                    movedCount = leftEntriesCount - shiftIndex;
+                    movedCount = leftCount - shiftIndex;
 
                     // Make room in the right node for the entries to be shifted from
                     // the left, and at the same time delete the entry at rightIndex.
-                    rightEntries[(deleteIndex + 1)..rightEntriesCount].CopyTo(rightEntries[(movedCount + deleteIndex)..]);
+                    rightEntries[(deleteIndex + 1)..rightCount].CopyTo(rightEntries[(movedCount + deleteIndex)..]);
                     rightEntries[0..deleteIndex].CopyTo(rightEntries[movedCount..]);
 
                     // Move in entries from the left node to the right node.
-                    var movedEntries = leftEntries[shiftIndex..leftEntriesCount];
+                    var movedEntries = leftEntries[shiftIndex..leftCount];
                     movedEntries.CopyTo(rightEntries);
                     movedEntries.Clear();
 
                     // Update counts
-                    leftEntriesCount -= movedCount;
-                    rightEntriesCount += movedCount - 1;
+                    leftEntriesCount = (leftCount -= movedCount);
+                    rightEntriesCount = (rightCount += movedCount - 1);
                 }
                 else                 // delete from right and shift to left
                 {
-                    rightEntries[0..deleteIndex].CopyTo(leftEntries[leftEntriesCount..]);
-                    rightEntries[(deleteIndex + 1)..rightEntriesCount].CopyTo(leftEntries[(leftEntriesCount + deleteIndex)..]);
+                    rightEntries[0..deleteIndex].CopyTo(leftEntries[leftCount..]);
+                    rightEntries[(deleteIndex + 1)..rightCount].CopyTo(leftEntries[(leftCount + deleteIndex)..]);
 
                     // Update counts
-                    movedCount = rightEntriesCount - 1;
-                    leftEntriesCount += movedCount;
-                    rightEntriesCount = 0;
+                    movedCount = rightCount - 1;
+                    leftEntriesCount = (leftCount += movedCount);
+                    rightEntriesCount = (rightCount = 0);
                 }
             }
 
@@ -155,7 +159,7 @@ namespace BPlusTree
                 {
                     // The old pivot key is demoted to the slot in the left node
                     // that comes from the left-most slot in the right node.
-                    leftEntries[leftEntriesCount - movedCount].Key = pivotKey;
+                    leftEntries[leftCount - movedCount].Key = pivotKey;
                 }
 
                 // The new pivot is the left-most key whose associated link
@@ -176,7 +180,7 @@ namespace BPlusTree
             // not have access to that key, so we skip handling that case here.
             else if (leftEntriesCount > 0)
             {
-                pivotKey = leftEntries[leftEntriesCount - 1].Key;
+                pivotKey = leftEntries[leftCount - 1].Key;
             }
         }
 

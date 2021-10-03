@@ -54,7 +54,7 @@ namespace BPlusTree
             var random = new Random(37);
             var items = GenerateRandomSequence(random, 300, true);
 
-            var removed = new List<int>();
+            var removedItems = new List<int>();
 
             for (int i = 0; i < items.Length; ++i)
             {
@@ -65,11 +65,11 @@ namespace BPlusTree
                 {
                     var numberToRemove = items[i - 4];
                     btree.Remove(numberToRemove);
-                    removed.Add(numberToRemove);
+                    removedItems.Add(numberToRemove);
                 }
             }
 
-            var sortedItems = items.Except(removed).OrderBy(x => x).ToArray();
+            var sortedItems = items.Except(removedItems).OrderBy(x => x).ToArray();
 
             Assert.Equal(sortedItems.Length, btree.Count);
 
@@ -77,6 +77,9 @@ namespace BPlusTree
 
             Assert.All(outputs, item => Assert.Equal(item.Key, item.Value));
             Assert.Equal(sortedItems, outputs.Select(item => item.Key));
+
+            Assert.All(sortedItems, number => Assert.True(btree.TryGetValue(number, out int v) && v == number));
+            Assert.All(removedItems, number => Assert.False(btree.ContainsKey(number)));
         }
     }
 }

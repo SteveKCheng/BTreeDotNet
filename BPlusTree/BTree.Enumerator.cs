@@ -1,12 +1,30 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BPlusTree
 {
+    internal static partial class BTreeCore
+    {
+        public static void CopyFromEnumeratorToArray<TItem, TEnumerator>
+            (TEnumerator enumerator, int count, TItem[] array, int arrayIndex)
+            where TEnumerator : IEnumerator<TItem>
+        {
+            try
+            {
+                if (array.Length - arrayIndex < count)
+                    throw new ArgumentOutOfRangeException(nameof(array), "Array is not large enough to hold all the items from this B+Tree. ");
+
+                while (enumerator.MoveNext())
+                    array[arrayIndex++] = enumerator.Current;
+            }
+            finally
+            {
+                enumerator.Dispose();
+            }
+        }
+    }
+
     public partial class BTree<TKey, TValue>
     {
         /// <summary>
@@ -102,15 +120,16 @@ namespace BPlusTree
             /// <inheritdoc cref="IEnumerator.Reset" />
             public void Reset()
             {
+                var owner = Owner;
                 int depth = _path.Depth;
 
-                if (depth != _owner.Depth)
+                if (depth != owner.Depth)
                 {
                     _path.Dispose();
-                    _path = _owner.NewPath();
+                    _path = owner.NewPath();
                 }
 
-                ResetPathPartially(_owner._root, 0);
+                ResetPathPartially(owner._root, 0);
                 _valid = true;
             }
 
@@ -138,7 +157,7 @@ namespace BPlusTree
             /// <summary>
             /// The B+Tree that this enumerator comes from.
             /// </summary>
-            private readonly BTree<TKey, TValue> _owner;
+            public BTree<TKey, TValue> Owner { get; }
 
             /// <summary>
             /// Prepare to enumerate items in the B+Tree starting from the first,
@@ -147,7 +166,7 @@ namespace BPlusTree
             /// <param name="owner">The B+Tree to enumerate items from. </param>
             public Enumerator(BTree<TKey, TValue> owner)
             {
-                _owner = owner;
+                Owner = owner;
                 _path = default;
                 _entriesCount = 0;
                 _valid = false;
@@ -164,14 +183,10 @@ namespace BPlusTree
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        /// <inheritdoc cref="ICollection{T}.CopyTo(T[], int)"/>
-        public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
-        {
-            if (array.Length - arrayIndex < Count)
-                throw new ArgumentOutOfRangeException(nameof(array), "Array is not large enough to hold all the items in this B+Tree. ");
+        bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly => false;
 
-            foreach (var item in this)
-                array[arrayIndex++] = item;
-        }
+        /// <inheritdoc cref="ICollection{T}.CopyTo(T[], int)"/>
+        void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
+            => BTreeCore.CopyFromEnumeratorToArray(GetEnumerator(), Count, array, arrayIndex);
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -45,8 +44,9 @@ namespace BPlusTree
         /// The branching factor of the B+Tree, or its "order".
         /// </summary>
         /// <remarks>
-        /// This is the number of keys held in each node.  
-        /// This implementation requires it to be even.
+        /// This is the number of keys held in each node in the B+Tree.
+        /// This implementation requires it to be even, and not exceed
+        /// <see cref="MaxOrder" />.
         /// </remarks>
         public int Order { get; }
 
@@ -101,12 +101,6 @@ namespace BPlusTree
             // check for the root node being null everywhere.
             _root = new NodeLink(new Entry<TKey, TValue>[order], 0);
         }
-
-        public ICollection<TKey> Keys => throw new NotImplementedException();
-
-        public ICollection<TValue> Values => throw new NotImplementedException();
-
-        public bool IsReadOnly => false;
 
         /// <summary>
         /// Search for where a key could be found or inserted in the B+Tree,

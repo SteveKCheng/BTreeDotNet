@@ -36,9 +36,10 @@ namespace BPlusTree
     public partial class BTree<TKey, TValue> : IDictionary<TKey, TValue>
     {
         /// <summary>
-        /// A total ordering of keys which this B+Tree will follow.
+        /// The maximum branching factor (or "order") supported by
+        /// this implementation.
         /// </summary>
-        public IComparer<TKey> KeyComparer { get; }
+        public static int MaxOrder => 1024;
 
         /// <summary>
         /// The branching factor of the B+Tree, or its "order".
@@ -48,6 +49,11 @@ namespace BPlusTree
         /// This implementation requires it to be even.
         /// </remarks>
         public int Order { get; }
+
+        /// <summary>
+        /// A total ordering of keys which this B+Tree will follow.
+        /// </summary>
+        public IComparer<TKey> KeyComparer { get; }
 
         /// <summary>
         /// The depth of the B+Tree.
@@ -74,16 +80,19 @@ namespace BPlusTree
         /// Construct an empty B+Tree.
         /// </summary>
         /// <param name="order">The desired order of the B+Tree. 
+        /// This must be a positive even number not greater than <see cref="MaxOrder" />.
         /// </param>
         /// <param name="keyComparer">
         /// An ordering used to arrange the look-up keys in the B+Tree.
         /// </param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="order"/> is invalid. </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="keyComparer"/> is null. </exception>
         public BTree(int order, IComparer<TKey> keyComparer)
         {
             if (order < 0 || (order & 1) != 0)
                 throw new ArgumentOutOfRangeException(nameof(order), "The order of the B+Tree must be a positive even number. ");
-            if (order > 32768)
-                throw new ArgumentOutOfRangeException(nameof(order), "The order of the B+Tree may not exceed 32768. ");
+            if (order > MaxOrder)
+                throw new ArgumentOutOfRangeException(nameof(order), $"The order of the B+Tree may not exceed {MaxOrder}. ");
 
             KeyComparer = keyComparer ?? throw new ArgumentNullException(nameof(keyComparer));
             Order = order;

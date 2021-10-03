@@ -36,7 +36,7 @@ namespace BPlusTree
     public partial class BTree<TKey, TValue> : IDictionary<TKey, TValue>
     {
         /// <summary>
-        /// A partial ordering of keys that can be evaluated for any two keys.
+        /// A total ordering of keys which this B+Tree will follow.
         /// </summary>
         public IComparer<TKey> KeyComparer { get; }
 
@@ -48,6 +48,22 @@ namespace BPlusTree
         /// This implementation requires it to be even.
         /// </remarks>
         public int Order { get; }
+
+        /// <summary>
+        /// The depth of the B+Tree.
+        /// </summary>
+        /// <remarks>
+        /// The depth, as a number, is the number of layers
+        /// in the B+Tree before the layer of leaf nodes.
+        /// 0 means there is only the root node, or the B+Tree 
+        /// is completely empty.  
+        /// </remarks>
+        public int Depth { get; private set; }
+
+        /// <summary>
+        /// The number of data items inside the B+Tree.
+        /// </summary>
+        public int Count { get; private set; }
 
         /// <summary>
         /// Points to the root node of the B+Tree.
@@ -76,22 +92,6 @@ namespace BPlusTree
             // check for the root node being null everywhere.
             _root = new NodeLink(new Entry<TKey, TValue>[order], 0);
         }
-
-        /// <summary>
-        /// The depth of the B+Tree.
-        /// </summary>
-        /// <remarks>
-        /// The depth, as a number, is the number of layers
-        /// in the B+Tree before the layer of leaf nodes.
-        /// 0 means there is only the root node, or the B+Tree 
-        /// is completely empty.  
-        /// </remarks>
-        public int Depth { get; private set; }
-
-        /// <summary>
-        /// The number of data items inside the B+Tree.
-        /// </summary>
-        public int Count { get; private set; }
 
         public ICollection<TKey> Keys => throw new NotImplementedException();
 

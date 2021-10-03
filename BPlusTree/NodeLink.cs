@@ -18,13 +18,18 @@ namespace BPlusTree
         /// </summary>
         /// <remarks>
         /// <para>
-        /// This node is to be followed when the key being sought for compares
-        /// greater (and not equal) to the key associated to this value.
-        /// </para>
-        /// <para>
         /// The child node may be an interior node or leaf node.  The reader
         /// of this structure has to decide based on the current level of the
         /// B+Tree being processed, and cast appropriately.
+        /// </para>
+        /// <para>
+        /// This node is to be followed when the key being sought for compares
+        /// greater to the key associated to this value.
+        /// </para>
+        /// <para>
+        /// When an interior node is removed from the B+Tree, the link to
+        /// it recorded here is guaranteed to be cleared out, in addition
+        /// to <see cref="EntriesCount"/> being adjusted.
         /// </para>
         /// </remarks>
         public object? Child;
@@ -41,6 +46,9 @@ namespace BPlusTree
         /// </remarks>
         public int EntriesCount;
 
+        /// <summary>
+        /// Construct with the node reference and entries count simultaneously set.
+        /// </summary>
         public NodeLink(object child, int count)
         {
             Child = child;
@@ -66,8 +74,10 @@ namespace BPlusTree
         /// </summary>
         /// <remarks>
         /// For internal nodes, the node being linked to from
-        /// <see cref="Value" /> has keys which compare greater
-        /// than (and not equal to) this key.
+        /// <see cref="Value" /> (being of type <see cref="NodeLink" />)
+        /// will have keys that always compare <em>not less</em> than this key.  
+        /// If the B+Tree allows duplicate keys, then those keys may 
+        /// compare equal, otherwise those keys are always strictly greater.
         /// </remarks>
         public TKey Key;
 
@@ -76,6 +86,9 @@ namespace BPlusTree
         /// </summary>
         public TValue Value;
 
+        /// <summary>
+        /// Construct with the key and value simultaneously set.
+        /// </summary>
         public Entry(TKey key, TValue value)
         {
             Key = key;

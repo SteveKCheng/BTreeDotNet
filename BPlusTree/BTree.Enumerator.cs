@@ -53,6 +53,40 @@ namespace BPlusTree
                 _path.Dispose();
             }
 
+            /// <summary>
+            /// Move <see cref="_path" /> to be positioned at the first entry
+            /// of the next leaf node (right neighbor), if it exists.
+            /// </summary>
+            /// <returns>
+            /// True if moving to the next leaf node is successful.
+            /// False if there is no next leaf node; in this case 
+            /// <see cref="_path"/> remains unchanged.
+            /// </returns>
+            private bool MoveToNextLeafNode()
+            {
+                for (int level = _path.Depth; level > 0; --level)
+                {
+                    ref var parentStep = ref _path.Steps[level - 1];
+                    var parentNode = BTreeCore.AsInteriorNode<TKey>(parentStep.Node!);
+                    int parentIndex = parentStep.Index;
+                    if (parentIndex + 1 < parentNode.Length)
+                    {
+                        ref var currentLink = ref parentNode[parentIndex + 1].Value;
+
+                        // Found the pivot for the right neighbor to the current leaf node
+                        if (currentLink.Child != null)
+                        {
+                            ++parentStep.Index;
+                            ResetPathPartially(currentLink, level);
+                            return true;
+                        }
+                    }
+                }
+
+                // The current leaf node is the last one and has no right neighbor.
+                return false;
+            }
+
             /// <inheritdoc cref="IEnumerator.MoveNext" />
             public bool MoveNext()
             {
@@ -65,33 +99,12 @@ namespace BPlusTree
                 // If the index went past all the active slots in the leaf node, 
                 // then we need to trace the path back up the B+Tree to find
                 // find the next neighboring leaf node.
-                if (step.Index >= _entriesCount)
+                if (step.Index >= _entriesCount && !MoveToNextLeafNode())
                 {
-                    for (int level = depth; level > 0; --level)
-                    {
-                        ref var parentStep = ref _path.Steps[level - 1];
-                        var parentNode = BTreeCore.AsInteriorNode<TKey>(parentStep.Node!);
-                        int parentIndex = parentStep.Index;
-                        if (parentIndex + 1 < parentNode.Length)
-                        {
-                            ref var currentLink = ref parentNode[parentIndex + 1].Value;
-
-                            // Found the pivot for the right neighbor to the current leaf node
-                            if (currentLink.Child != null)
-                            {
-                                ++parentStep.Index;
-                                ResetPathPartially(currentLink, level);
-                                goto hasItem;
-                            }
-                        }
-                    }
-
-                    // The current leaf node is the last one and has no right neighbor.
                     _valid = false;
                     return false;
                 }
 
-            hasItem:
                 var leafNode = AsLeafNode(step.Node!);
                 ref var entry = ref leafNode[step.Index];
                 _current = new KeyValuePair<TKey, TValue>(entry.Key, entry.Value);

@@ -15,7 +15,7 @@ namespace BPlusTree
         /// <summary>
         /// The B+Tree that this path applies to.
         /// </summary>
-        private object? _owner;
+        internal object Owner { get; }
 
         /// <summary>
         /// Each step along the path.
@@ -39,9 +39,9 @@ namespace BPlusTree
         /// </remarks>
         internal int Depth { get; }
 
-        internal BTreePath(object? owner, BTreeStep[] steps, int depth)
+        internal BTreePath(object owner, BTreeStep[] steps, int depth)
         {
-            _owner = owner;
+            Owner = owner;
             Steps = steps;
             Depth = depth;
         }
@@ -71,11 +71,17 @@ namespace BPlusTree
         /// The index of the entry selected within <see cref="Node" />.
         /// </summary>
         /// <remarks>
-        /// This index ranges from 0 to the number of active entries in the
-        /// node, as recorded in <see cref="NodeLink.EntriesCount"/>, minus one.
-        /// So for leaf nodes, the maximum index possible is the order of the
-        /// B+Tree minus one, while for interior nodes the maximum index 
-        /// is the order of the B+Tree.
+        /// <para>
+        /// This index ranges from 0, to <see cref="NodeLink.EntriesCount"/> minus one,
+        /// which is just the order of the B+Tree.
+        /// </para>
+        /// <para>
+        /// For interior nodes, this index thus covers all the possible links
+        /// to children and no more.  For leaf nodes, the maximum index value
+        /// does not point to any valid entry, but is an intermediate state
+        /// signaling that the end of the leaf node's entries have been reached,
+        /// when iterating through the B+Tree's data entries forward.
+        /// </para>
         /// </remarks>
         public int Index;
 

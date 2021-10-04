@@ -13,11 +13,6 @@ namespace BPlusTree
     internal struct BTreePath : IDisposable
     {
         /// <summary>
-        /// The B+Tree that this path applies to.
-        /// </summary>
-        internal object Owner { get; }
-
-        /// <summary>
         /// Each step along the path.
         /// </summary>
         /// <remarks>
@@ -39,11 +34,18 @@ namespace BPlusTree
         /// </remarks>
         internal int Depth { get; }
 
-        internal BTreePath(object owner, BTreeStep[] steps, int depth)
+        /// <summary>
+        /// Version number to try to detect
+        /// when this path has been invalidated by a change
+        /// to the B+Tree.
+        /// </summary>
+        internal int Version { get; set; }
+
+        internal BTreePath(BTreeStep[] steps, int depth, int version)
         {
-            Owner = owner;
             Steps = steps;
             Depth = depth;
+            Version = version;
         }
 
         public void Dispose()

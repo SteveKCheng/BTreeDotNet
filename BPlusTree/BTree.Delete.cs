@@ -542,7 +542,7 @@ namespace BPlusTree
 
                             // Delete the first step, for the old root node, in the path
                             path.Steps.AsSpan()[1..(path.Depth + 1)].CopyTo(path.Steps);
-                            path = new BTreePath(path.Owner, path.Steps, path.Depth - 1);
+                            path = new BTreePath(path.Steps, path.Depth - 1, path.Version);
                         }
                     }
                 }
@@ -553,12 +553,14 @@ namespace BPlusTree
 
         private void DeleteAtPath(ref BTreePath path)
         {
+            int version = ++_version;
             DeleteEntryAndRecursivelyRebalance(ref path, 0, ref _root,
                                                ref Unsafe.NullRef<NodeLink>(),
                                                ref Unsafe.NullRef<NodeLink>(),
                                                ref Unsafe.NullRef<TKey>(),
                                                ref Unsafe.NullRef<TKey>(),
                                                false);
+            path.Version = version;
             Count--;
         }
 

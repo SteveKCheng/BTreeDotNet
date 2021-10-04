@@ -74,5 +74,26 @@ namespace BPlusTree
         public static Entry<TKey, NodeLink>[] AsInteriorNode<TKey>(object node)
             => (Entry<TKey, NodeLink>[])node;
 
+        /// <summary>
+        /// Throw the exception about accessing an invalid entry of a B+Tree from an enumerator.
+        /// </summary>
+        public static void ThrowInvalidValueInEnumerator()
+        {
+            throw new InvalidOperationException(
+                "Cannot retrieve the value from this enumerator because it is not pointing to a valid entry in the B+Tree. ");
+        }
+
+        /// <summary>
+        /// Throw an exception if <see cref="BTree{TKey, TValue}.Enumerator" /> has
+        /// been invalidated.
+        /// </summary>
+        public static void CheckEnumeratorVersion(ref BTreePath path, int _version)
+        {
+            if (path.Version != _version)
+            {
+                throw new InvalidOperationException(
+                    "Cannot use this enumerator any longer because the B+Tree it is referring to has been modified. ");
+            }
+        }
     }
 }

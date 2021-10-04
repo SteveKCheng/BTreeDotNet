@@ -77,6 +77,12 @@ namespace BPlusTree
         private NodeLink _root;
 
         /// <summary>
+        /// A counter incremented by one for every change to the B+Tree
+        /// to try to detect iterator invalidation.
+        /// </summary>
+        private int _version;
+
+        /// <summary>
         /// Construct an empty B+Tree.
         /// </summary>
         /// <param name="order">The desired order of the B+Tree. 
@@ -178,7 +184,7 @@ namespace BPlusTree
         private BTreePath NewPath()
         {
             var steps = ArrayPool<BTreeStep>.Shared.Rent(Depth + 1);
-            return new BTreePath(this, steps, Depth);
+            return new BTreePath(steps, Depth, _version);
         }
 
         /// <summary>

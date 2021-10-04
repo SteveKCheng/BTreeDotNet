@@ -39,7 +39,7 @@ namespace BPlusTree
                 get
                 {
                     if (!_valid)
-                        throw new InvalidOperationException("Cannot retrieve the value from this enumerator because it is not pointing to a valid entry in the B+Tree. ");
+                        BTreeCore.ThrowInvalidValueInEnumerator();
                     return _current;
                 }
             }
@@ -142,13 +142,16 @@ namespace BPlusTree
             /// </returns>
             public bool MoveNext()
             {
+                if (_ended)
+                    return false;
+
+                BTreeCore.CheckEnumeratorVersion(ref _path, Owner._version);
+
                 ref var step = ref _path.Steps[_path.Depth];
 
                 // Do not increment step.Index on the very first call (after Reset)
                 if (_valid)
                     ++step.Index;
-                else if (_ended)
-                    return false;
 
                 // If the index went past all the active slots in the leaf node, 
                 // then we need to trace the path back up the B+Tree to find
@@ -190,6 +193,8 @@ namespace BPlusTree
             {
                 if (!_valid && !_ended)
                     return false;
+
+                BTreeCore.CheckEnumeratorVersion(ref _path, Owner._version);
 
                 ref var step = ref _path.Steps[_path.Depth];
                 if (step.Index == 0 && !MoveToPreviousLeafNode())
@@ -260,6 +265,10 @@ namespace BPlusTree
                 {
                     _path.Dispose();
                     _path = owner.NewPath();
+                }
+                else
+                {
+                    _path.Version = owner._version;
                 }
 
                 ResetPathPartially(node: owner._root, level: 0, left: toBeginning);

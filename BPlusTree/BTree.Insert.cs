@@ -205,7 +205,8 @@ namespace BPlusTree
             {
                 if (!Unsafe.IsNullRef(ref FindEntry(ref path, key)))
                     return false;
-                    
+
+                ++_version;
                 Insert(key, value, ref path);
                 return true;
             }

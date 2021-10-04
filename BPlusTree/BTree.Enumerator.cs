@@ -53,6 +53,7 @@ namespace BPlusTree
             /// </summary>
             public void Dispose()
             {
+                _current = default;
                 _valid = false;
                 _ended = false;
                 _path.Dispose();
@@ -158,6 +159,7 @@ namespace BPlusTree
                 // find the next neighboring leaf node.
                 if (step.Index >= _entriesCount && !MoveToNextLeafNode())
                 {
+                    _current = default;
                     _valid = false;
                     _ended = true;
                     return false;
@@ -191,14 +193,12 @@ namespace BPlusTree
             /// </returns>
             public bool MovePrevious()
             {
-                if (!_valid && !_ended)
-                    return false;
-
                 BTreeCore.CheckEnumeratorVersion(ref _path, Owner._version);
 
                 ref var step = ref _path.Steps[_path.Depth];
                 if (step.Index == 0 && !MoveToPreviousLeafNode())
                 {
+                    _current = default;
                     _valid = false;
                     _ended = false;
                     return false;
@@ -211,6 +211,27 @@ namespace BPlusTree
                 _valid = true;
                 _ended = false;
                 return true;
+            }
+
+            /// <summary>
+            /// Remove the entry that this enumerator is currently pointing to.
+            /// </summary>
+            /// <remarks>
+            /// After this method completes successfully, this enumerator will not be pointing
+            /// to any valid entry.  Call <see cref="MoveNext" /> or <see cref="MovePrevious" />
+            /// to get this enumerator to point to the entry following or preceduing 
+            /// the one that has been removed, respectively.
+            /// </remarks>
+            public void RemoveCurrent()
+            {
+                if (!_valid)
+                    throw new InvalidOperationException("This enumerator is not pointing to any entry from the B+Tree that can be removed. ");
+
+                BTreeCore.CheckEnumeratorVersion(ref _path, Owner._version);
+                Owner.DeleteAtPath(ref _path);
+
+                _current = default;
+                _valid = false;
             }
 
             /// <summary>
@@ -272,6 +293,7 @@ namespace BPlusTree
                 }
 
                 ResetPathPartially(node: owner._root, level: 0, left: toBeginning);
+                _current = default;
                 _valid = false;
                 _ended = !toBeginning;
             }
@@ -342,9 +364,9 @@ namespace BPlusTree
                 Owner = owner;
                 _path = default;
                 _entriesCount = 0;
+                _current = default;
                 _valid = false;
                 _ended = false;
-                _current = default;
 
                 Reset(toBeginning);
             }

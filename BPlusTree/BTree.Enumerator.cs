@@ -39,7 +39,7 @@ namespace BPlusTree
                 get
                 {
                     if (!_valid)
-                        throw new InvalidOperationException("Cannot retrieve the current value of the enumerator when it has ended. ");
+                        throw new InvalidOperationException("Cannot retrieve the value from this enumerator because it is not pointing to a valid entry in the B+Tree. ");
                     return _current;
                 }
             }
@@ -50,6 +50,7 @@ namespace BPlusTree
             public void Dispose()
             {
                 _valid = false;
+                _ended = false;
                 _path.Dispose();
             }
 
@@ -77,7 +78,7 @@ namespace BPlusTree
                         if (currentLink.Child != null)
                         {
                             ++parentStep.Index;
-                            ResetPathPartially(currentLink, level);
+                            ResetPathPartially(node: currentLink, level: level, left: true);
                             return true;
                         }
                     }
@@ -87,14 +88,45 @@ namespace BPlusTree
                 return false;
             }
 
+            /// <summary>
+            /// Move <see cref="_path" /> to be positioned at the last entry
+            /// of the previous leaf node (left neighbor), if it exists.
+            /// </summary>
+            /// <returns>
+            /// True if moving to the previous leaf node is successful.
+            /// False if there is no previous leaf node; in this case 
+            /// <see cref="_path"/> remains unchanged.
+            /// </returns>
+            private bool MoveToPreviousLeafNode()
+            {
+                for (int level = _path.Depth; level > 0; --level)
+                {
+                    ref var parentStep = ref _path.Steps[level - 1];
+                    var parentNode = BTreeCore.AsInteriorNode<TKey>(parentStep.Node!);
+                    int parentIndex = parentStep.Index;
+                    if (parentIndex > 0)
+                    {
+                        ref var currentLink = ref parentNode[parentIndex - 1].Value;
+
+                        --parentStep.Index;
+                        ResetPathPartially(node: currentLink, level: level, left: false);
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+
             /// <inheritdoc cref="IEnumerator.MoveNext" />
             public bool MoveNext()
             {
                 if (!_valid)
-                    return false;
+                {
+                    if (_ended)
+                        return false;
+                }
 
-                int depth = _path.Depth;
-                ref var step = ref _path.Steps[depth];
+                ref var step = ref _path.Steps[_path.Depth];
 
                 // If the index went past all the active slots in the leaf node, 
                 // then we need to trace the path back up the B+Tree to find
@@ -102,6 +134,7 @@ namespace BPlusTree
                 if (step.Index >= _entriesCount && !MoveToNextLeafNode())
                 {
                     _valid = false;
+                    _ended = true;
                     return false;
                 }
 
@@ -113,21 +146,60 @@ namespace BPlusTree
             }
 
             /// <summary>
-            /// Starting from a given level of the B+Tree, take the left-most path
-            /// down to the first entry in a leaf node.
+            /// Move backwards to preceding entry in the B+Tree.
             /// </summary>
-            private void ResetPathPartially(NodeLink currentLink, int level)
+            /// <returns>
+            /// True if this enumerator now points to the preceding entry;
+            /// false if there is none.
+            /// </returns>
+            public bool MovePrevious()
+            {
+                if (!_valid && !_ended)
+                    return false;
+
+                ref var step = ref _path.Steps[_path.Depth];
+                if (step.Index == 0 && !MoveToPreviousLeafNode())
+                {
+                    _valid = false;
+                    return false;
+                }
+
+                --step.Index;
+                var leafNode = AsLeafNode(step.Node!);
+                ref var entry = ref leafNode[step.Index];
+                _current = new KeyValuePair<TKey, TValue>(entry.Key, entry.Value);
+                _valid = true;
+                _ended = false;
+                return true;
+            }
+
+            /// <summary>
+            /// Modifies <see cref="_path"/>
+            /// to be the left-most path
+            /// or right-most path starting from a given of the B+Tree.
+            /// </summary>
+            /// <param name="node">Points to the starting node existing 
+            /// at the level of the B+tree given by <paramref name="level" />.
+            /// </param>
+            /// <param name="level">The level of the B+Tree to start moving downwards from.
+            /// </param>
+            /// <param name="left">True to take left-most path; false to take the right-most path.
+            /// </param>
+            private void ResetPathPartially(NodeLink node, int level, bool left)
             {
                 int depth = _path.Depth;
+                int index;
                 while (level < depth)
                 {
-                    _path.Steps[level] = new BTreeStep(currentLink.Child!, 0);
-                    currentLink = BTreeCore.AsInteriorNode<TKey>(currentLink.Child!)[0].Value;
+                    index = left ? 0 : node.EntriesCount;
+                    _path.Steps[level] = new BTreeStep(node.Child!, index);
+                    node = BTreeCore.AsInteriorNode<TKey>(node.Child!)[index].Value;
                     ++level;
                 }
 
-                _path.Steps[depth] = new BTreeStep(currentLink.Child!, 0);
-                _entriesCount = currentLink.EntriesCount;
+                index = left ? 0 : node.EntriesCount;
+                _path.Steps[depth] = new BTreeStep(node.Child!, index);
+                _entriesCount = node.EntriesCount;
             }
 
             /// <inheritdoc cref="IEnumerator.Reset" />
@@ -142,14 +214,25 @@ namespace BPlusTree
                     _path = owner.NewPath();
                 }
 
-                ResetPathPartially(owner._root, 0);
-                _valid = true;
+                ResetPathPartially(node: owner._root, level: 0, left: true);
+                _valid = false;
+                _ended = false;
             }
 
             /// <summary>
-            /// Set to false when <see cref="MoveNext" /> moves past the last leaf node.
+            /// True if this enumerator is pointing to a valid entry.
+            /// </summary>
+            public bool IsValid => _valid;
+
+            /// <summary>
+            /// Backing field for <see cref="IsValid" />.
             /// </summary>
             private bool _valid;
+
+            /// <summary>
+            /// Set to ended when <see cref="MoveNext" /> moves past the last leaf node.
+            /// </summary>
+            private bool _ended;
 
             /// <summary>
             /// Remembers the path from the root of the B+Tree down to the leaf node
@@ -183,6 +266,7 @@ namespace BPlusTree
                 _path = default;
                 _entriesCount = 0;
                 _valid = false;
+                _ended = false;
                 _current = default;
 
                 Reset();

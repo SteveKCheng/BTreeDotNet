@@ -47,6 +47,10 @@ namespace BPlusTree
             /// <inheritdoc cref="IEnumerator.Current" />
             object IEnumerator.Current => Current;
 
+            /// <summary>
+            /// Frees up temporary scratchpad memory used for iterating through
+            /// the B+Tree.
+            /// </summary>
             public void Dispose()
             {
                 _valid = false;
@@ -117,16 +121,34 @@ namespace BPlusTree
                 return false;
             }
 
-            /// <inheritdoc cref="IEnumerator.MoveNext" />
+            /// <summary>
+            /// Move forwards to the following entry in the B+Tree.
+            /// </summary>
+            /// <remarks>
+            /// <para>
+            /// The first call to this method,
+            /// after this enumerator has been initialized to be
+            /// "at the beginning", via <see cref="Reset"/> or the 
+            /// <see cref="Enumerator"/> constructor, will cause
+            /// <see cref="Current" /> to output the first entry of the B+Tree.
+            /// </para>
+            /// <para>
+            /// Calls to this method may be mixed with <see cref="MovePrevious" />.
+            /// </para>
+            /// </remarks>
+            /// <returns>
+            /// True if this enumerator now points to the following entry;
+            /// false if it has reached the end.  
+            /// </returns>
             public bool MoveNext()
             {
-                if (!_valid)
-                {
-                    if (_ended)
-                        return false;
-                }
-
                 ref var step = ref _path.Steps[_path.Depth];
+
+                // Do not increment step.Index on the very first call (after Reset)
+                if (_valid)
+                    ++step.Index;
+                else if (_ended)
+                    return false;
 
                 // If the index went past all the active slots in the leaf node, 
                 // then we need to trace the path back up the B+Tree to find
@@ -141,16 +163,28 @@ namespace BPlusTree
                 var leafNode = AsLeafNode(step.Node!);
                 ref var entry = ref leafNode[step.Index];
                 _current = new KeyValuePair<TKey, TValue>(entry.Key, entry.Value);
-                ++step.Index;
+                _valid = true;
                 return true;
             }
 
             /// <summary>
             /// Move backwards to preceding entry in the B+Tree.
             /// </summary>
+            /// <remarks>
+            /// <para>
+            /// The first call to this method,
+            /// after this enumerator has been initialized to be
+            /// "at the end", via <see cref="Reset"/> or the 
+            /// <see cref="Enumerator"/> constructor, will cause
+            /// <see cref="Current" /> to output the last entry of the B+Tree.
+            /// </para>
+            /// <para>
+            /// Calls to this method may be mixed with <see cref="MoveNext" />.
+            /// </para>
+            /// </remarks>
             /// <returns>
             /// True if this enumerator now points to the preceding entry;
-            /// false if there is none.
+            /// false if there is none.  
             /// </returns>
             public bool MovePrevious()
             {
@@ -161,6 +195,7 @@ namespace BPlusTree
                 if (step.Index == 0 && !MoveToPreviousLeafNode())
                 {
                     _valid = false;
+                    _ended = false;
                     return false;
                 }
 
@@ -202,8 +237,21 @@ namespace BPlusTree
                 _entriesCount = node.EntriesCount;
             }
 
-            /// <inheritdoc cref="IEnumerator.Reset" />
-            public void Reset()
+            /// <inheritdoc cref="IEnumerator.Reset" />.
+            public void Reset() => Reset(true);
+
+            /// <summary>
+            /// Reset this enumerator to either the beginning or end
+            /// of the B+Tree.
+            /// </summary>
+            /// <param name="toBeginning">
+            /// If true, resets to the beginning of the B+Tree, so that the next call
+            /// to <see cref="MoveNext" /> retrieves the first entry
+            /// of the B+Tree.  If false, resets to the end, so that the
+            /// next call to <see cref="MovePrevious" /> retrieves
+            /// the last entry of the B+Tree.
+            /// </param>
+            public void Reset(bool toBeginning)
             {
                 var owner = Owner;
                 int depth = _path.Depth;
@@ -214,19 +262,33 @@ namespace BPlusTree
                     _path = owner.NewPath();
                 }
 
-                ResetPathPartially(node: owner._root, level: 0, left: true);
+                ResetPathPartially(node: owner._root, level: 0, left: toBeginning);
                 _valid = false;
-                _ended = false;
+                _ended = !toBeginning;
             }
 
             /// <summary>
-            /// True if this enumerator is pointing to a valid entry.
+            /// True if this enumerator is pointing to a valid entry,
+            /// so that the <see cref="Current" /> property can be queried.
             /// </summary>
+            /// <remarks>
+            /// This flag is the same as what has been returned in the last
+            /// call to <see cref="MovePrevious"/> or <see cref="MoveNext"/>.
+            /// If there has been no call to those methods after resetting
+            /// or initializing this enumerator, this flag is false.
+            /// </remarks>
             public bool IsValid => _valid;
 
             /// <summary>
             /// Backing field for <see cref="IsValid" />.
             /// </summary>
+            /// <remarks>
+            /// If this member is false while <see cref="_ended"/> is false, that means
+            /// this instance has just been reset to the beginning of the B+Tree,
+            /// and the first entry will be reported from the next call to
+            /// <see cref="MoveNext" />.  If <see cref="_ended" /> is true
+            /// then this member is necessarily false.
+            /// </remarks>
             private bool _valid;
 
             /// <summary>
@@ -256,11 +318,17 @@ namespace BPlusTree
             public BTree<TKey, TValue> Owner { get; }
 
             /// <summary>
-            /// Prepare to enumerate items in the B+Tree starting from the first,
-            /// when ordered by item key.
+            /// Prepare to enumerate items in the B+Tree ordered by item key.
             /// </summary>
             /// <param name="owner">The B+Tree to enumerate items from. </param>
-            public Enumerator(BTree<TKey, TValue> owner)
+            /// <param name="toBeginning">
+            /// If true, the enumerator is positioned to the beginning of the B+Tree, 
+            /// so that the following call to <see cref="MoveNext" /> retrieves the first entry
+            /// of the B+Tree.  If false, the enumerator is positioned to the end, so 
+            /// that the next call to <see cref="MovePrevious" /> retrieves
+            /// the last entry of the B+Tree.
+            /// </param>
+            public Enumerator(BTree<TKey, TValue> owner, bool toBeginning)
             {
                 Owner = owner;
                 _path = default;
@@ -269,11 +337,25 @@ namespace BPlusTree
                 _ended = false;
                 _current = default;
 
-                Reset();
+                Reset(toBeginning);
             }
         }
 
-        public Enumerator GetEnumerator() => new Enumerator(this);
+        /// <summary>
+        /// Prepare to enumerate entries in the B+Tree from the first onward.
+        /// </summary>
+        public Enumerator GetEnumerator() => GetEnumerator(toBeginning: true);
+
+        /// <summary>
+        /// Prepare to enumerate entries in the B+Tree.
+        /// </summary>
+        /// <param name="toBeginning">
+        /// If true, entries will be enumerated in forward order, from the first
+        /// entry onwards.  If false, entries can be enumerated backwards, from
+        /// the last entry, by calling <see cref="Enumerator.MovePrevious" />
+        /// on the returned object.
+        /// </param>
+        public Enumerator GetEnumerator(bool toBeginning) => new Enumerator(this, toBeginning);
 
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
             => GetEnumerator();

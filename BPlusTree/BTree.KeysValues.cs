@@ -43,7 +43,7 @@ namespace BPlusTree
         {
             private Enumerator _itemsEnumerator;
 
-            public KeysEnumerator(BTree<TKey, TValue> owner) => _itemsEnumerator = new Enumerator(owner);
+            public KeysEnumerator(BTree<TKey, TValue> owner) => _itemsEnumerator = new Enumerator(owner, toBeginning: true);
 
             public TKey Current => _itemsEnumerator.Current.Key;
 
@@ -111,7 +111,7 @@ namespace BPlusTree
         {
             private Enumerator _itemsEnumerator;
 
-            public ValuesEnumerator(BTree<TKey, TValue> owner) => _itemsEnumerator = new Enumerator(owner);
+            public ValuesEnumerator(BTree<TKey, TValue> owner) => _itemsEnumerator = new Enumerator(owner, toBeginning: true);
 
             public TValue Current => _itemsEnumerator.Current.Value;
 

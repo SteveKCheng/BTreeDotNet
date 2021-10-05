@@ -29,6 +29,10 @@ namespace BPlusTree
         /// </param>
         /// <param name="entries">The entries in the node. </param>
         /// <param name="numEntries">The number of active entries in the node. </param>
+        /// <param name="found">Set to true if <paramref name="key"/> is exactly 
+        /// found in the node, i.e. <paramref name="keyComparer"/> returns zero
+        /// when comparing keys.
+        /// </param>
         /// <returns>
         /// For "lower bound": the first index where an entry with the given key, 
         /// or a preceding key, can be inserted without violating ordering.  For 
@@ -42,7 +46,8 @@ namespace BPlusTree
                                                               TKey key,
                                                               bool forUpperBound,
                                                               Entry<TKey, TValue>[] entries,
-                                                              int numEntries)
+                                                              int numEntries,
+                                                              out bool found)
         {
             // Keys in internal nodes are stored starting from index 1,
             // but we still return 0-based index
@@ -52,19 +57,29 @@ namespace BPlusTree
             int left = shift;
             int right = numEntries;
 
+            bool hasEqualKey = false;
+
             // Bisect until the interval brackets only one choice of index
             while (left != right)
             {
-                // B+Tree order is capped so this index calculation cannot overflow
+                // B+Tree order is capped so this index calculation cannot overflow.
+                // If right == left + 1, mid is always biased down to be left,
+                // thus it will be a valid index in reading the array below.
                 int mid = (left + right) >> 1;
 
-                var comparison = keyComparer.Compare(entries[mid].Key, key);
+                int comparison = keyComparer.Compare(entries[mid].Key, key);
+  
+                // This binary search will be guaranteed to compare
+                // against the search key if it exists in the node.
+                hasEqualKey |= (comparison == 0);
+                
                 if (comparison < 0 || (forUpperBound && (comparison == 0)))
                     left = mid + 1;
                 else
                     right = mid;
             }
 
+            found = hasEqualKey;
             return left - shift;
         }
 

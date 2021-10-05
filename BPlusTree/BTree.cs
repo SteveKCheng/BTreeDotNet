@@ -119,7 +119,10 @@ namespace BPlusTree
         /// <param name="path">
         /// On successful return, this method records the path to follow here.
         /// </param>
-        private void FindKey(TKey key, bool forUpperBound, ref BTreePath path)
+        /// <returns>
+        /// Whether the exact key has been found in the B+Tree.
+        /// </returns>
+        private bool FindKey(TKey key, bool forUpperBound, ref BTreePath path)
         {
             var currentLink = _root;
 
@@ -129,16 +132,21 @@ namespace BPlusTree
             for (int level = 0; level < depth; ++level)
             {
                 var internalNode = BTreeCore.AsInteriorNode<TKey>(currentLink.Child!);
-                index = BTreeCore.SearchKeyWithinNode(KeyComparer, key, forUpperBound, internalNode, currentLink.EntriesCount);
+                index = BTreeCore.SearchKeyWithinNode(KeyComparer, key, forUpperBound, 
+                                                      internalNode, currentLink.EntriesCount,
+                                                      out _);
 
                 path[level] = new BTreeStep(internalNode, index);
                 currentLink = internalNode[index].Value;
             }
 
             var leafNode = AsLeafNode(currentLink.Child!);
-            index = BTreeCore.SearchKeyWithinNode(KeyComparer, key, forUpperBound, leafNode, currentLink.EntriesCount);
+            index = BTreeCore.SearchKeyWithinNode(KeyComparer, key, forUpperBound, 
+                                                  leafNode, currentLink.EntriesCount,
+                                                  out bool found);
 
             path.Leaf = new BTreeStep(leafNode, index);
+            return found;
         }
         
         /// <summary>

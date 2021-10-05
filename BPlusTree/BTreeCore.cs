@@ -99,7 +99,7 @@ namespace BPlusTree
         }
 
         /// <summary>
-        /// Throw an exception if <see cref="BTree{TKey, TValue}.Enumerator" /> has
+        /// Throw an exception if <see cref="BTree{TKey, TValue}.BTreeEnumerator" /> has
         /// been invalidated.
         /// </summary>
         public static void CheckEnumeratorVersion(ref BTreePath path, int _version)

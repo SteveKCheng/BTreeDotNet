@@ -37,9 +37,12 @@ namespace BPlusTree
 
         public struct KeysEnumerator : IEnumerator<TKey>
         {
-            private Enumerator _itemsEnumerator;
+            private BTreeEnumerator<TKey, TValue> _itemsEnumerator;
 
-            public KeysEnumerator(BTree<TKey, TValue> owner) => _itemsEnumerator = new Enumerator(owner, toBeginning: true);
+            public KeysEnumerator(BTree<TKey, TValue> owner)
+            {
+                _itemsEnumerator = new BTreeEnumerator<TKey, TValue>(owner, toBeginning: true);
+            }
 
             public TKey Current => _itemsEnumerator.Current.Key;
 
@@ -101,9 +104,12 @@ namespace BPlusTree
 
         public struct ValuesEnumerator : IEnumerator<TValue>
         {
-            private Enumerator _itemsEnumerator;
+            private BTreeEnumerator<TKey, TValue> _itemsEnumerator;
 
-            public ValuesEnumerator(BTree<TKey, TValue> owner) => _itemsEnumerator = new Enumerator(owner, toBeginning: true);
+            public ValuesEnumerator(BTree<TKey, TValue> owner)
+            {
+                _itemsEnumerator = new BTreeEnumerator<TKey, TValue>(owner, toBeginning: true);
+            }
 
             public TValue Current => _itemsEnumerator.Current.Value;
 

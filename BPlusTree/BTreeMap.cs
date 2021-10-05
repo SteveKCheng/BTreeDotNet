@@ -261,17 +261,19 @@ namespace BPlusTree
         /// If true, the enumerator is positioned at the start of all entries.
         /// If false, the enumerator is positioned at the end of all entries.
         /// </param>
-        public new Enumerator GetEnumerator(bool toBeginning) => base.GetEnumerator(toBeginning);
+        public BTreeEnumerator<TKey, TValue> 
+            GetEnumerator(bool toBeginning) => new BTreeEnumerator<TKey, TValue>(this, toBeginning);
 
         /// <summary>
         /// Get the sequence of entries in this B+Tree, 
         /// presented sorted by key according to <see cref="KeyComparer" />.
         /// </summary>
-        public Enumerator GetEnumerator() => GetEnumerator(toBeginning: true);
+        public BTreeEnumerator<TKey, TValue> GetEnumerator() 
+            => GetEnumerator(toBeginning: true);
 
         /// <inheritdoc cref="IEnumerable{T}.GetEnumerator" />
         IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
-            => base.GetEnumerator(toBeginning: true);
+            => GetEnumerator();
 
         /// <inheritdoc cref="IEnumerable.GetEnumerator" />
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

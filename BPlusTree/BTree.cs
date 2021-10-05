@@ -53,7 +53,7 @@ namespace BPlusTree
         /// <summary>
         /// A total ordering of keys which this B+Tree will follow.
         /// </summary>
-        protected IComparer<TKey> KeyComparer { get; }
+        internal IComparer<TKey> KeyComparer { get; }
 
         /// <summary>
         /// The depth of the B+Tree.
@@ -74,13 +74,13 @@ namespace BPlusTree
         /// <summary>
         /// Points to the root node of the B+Tree.
         /// </summary>
-        private NodeLink _root;
+        internal NodeLink _root;
 
         /// <summary>
         /// A counter incremented by one for every change to the B+Tree
         /// to try to detect iterator invalidation.
         /// </summary>
-        private int _version;
+        internal int _version;
 
         /// <summary>
         /// Construct an empty B+Tree.
@@ -152,7 +152,7 @@ namespace BPlusTree
         /// <summary>
         /// Cast an object reference as a leaf node.
         /// </summary>
-        private static Entry<TKey, TValue>[] AsLeafNode(object node)
+        internal static Entry<TKey, TValue>[] AsLeafNode(object node)
             => (Entry<TKey, TValue>[])node;
 
         /// <summary>

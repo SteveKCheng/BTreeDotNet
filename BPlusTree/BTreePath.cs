@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Runtime.CompilerServices;
 
 namespace BPlusTree
 {
@@ -21,7 +22,48 @@ namespace BPlusTree
         /// and so forth, until step N (N = <see cref="Depth" />) 
         /// selects an entry in the leaf node.
         /// </remarks>
-        internal BTreeStep[] Steps { get; }
+        private BTreeStep[] Steps { get; }
+
+        /// <summary>
+        /// Select one step along the path.
+        /// </summary>
+        /// <remarks>
+        /// Step 0 selects an entry in the root node,
+        /// Step 1 selects an entry in the B+Tree of level 1,
+        /// and so forth, until step N (N = <see cref="Depth" />) 
+        /// selects an entry in the leaf node.
+        /// </remarks>
+        internal ref BTreeStep this[int level]
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return ref Steps[level];
+            }
+        }
+
+        /// <summary>
+        /// Select the step for the leaf node in the path.
+        /// </summary>
+        internal ref BTreeStep Leaf
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return ref Steps[Depth];
+            }
+        }
+
+        /// <summary>
+        /// Shrink this path because the B+Tree it refers to has collapsed
+        /// a root node and decreased its depth.
+        /// </summary>
+        internal void DecreaseDepth()
+        {
+            // Delete the first step, for the old root node, in the path
+            Steps.AsSpan()[1..(Depth + 1)].CopyTo(Steps);
+            Depth--;
+        }
 
         /// <summary>
         /// The depth of the B+Tree.
@@ -32,7 +74,7 @@ namespace BPlusTree
         /// 0 means there is only the root node, or the B+Tree 
         /// is completely empty.  
         /// </remarks>
-        internal int Depth { get; }
+        internal int Depth { get; private set; }
 
         /// <summary>
         /// Version number to try to detect

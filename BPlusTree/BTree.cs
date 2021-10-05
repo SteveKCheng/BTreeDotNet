@@ -131,14 +131,14 @@ namespace BPlusTree
                 var internalNode = BTreeCore.AsInteriorNode<TKey>(currentLink.Child!);
                 index = BTreeCore.SearchKeyWithinNode(KeyComparer, key, forUpperBound, internalNode, currentLink.EntriesCount);
 
-                path.Steps[level] = new BTreeStep(internalNode, index);
+                path[level] = new BTreeStep(internalNode, index);
                 currentLink = internalNode[index].Value;
             }
 
             var leafNode = AsLeafNode(currentLink.Child!);
             index = BTreeCore.SearchKeyWithinNode(KeyComparer, key, forUpperBound, leafNode, currentLink.EntriesCount);
 
-            path.Steps[depth] = new BTreeStep(leafNode, index);
+            path.Leaf = new BTreeStep(leafNode, index);
         }
         
         /// <summary>
@@ -164,7 +164,7 @@ namespace BPlusTree
         {
             if (level > 0)
             {
-                ref var parentStep = ref path.Steps[level - 1];
+                ref var parentStep = ref path[level -1];
                 var parentNode = BTreeCore.AsInteriorNode<TKey>(parentStep.Node!);
                 return ref parentNode[parentStep.Index].Value.EntriesCount;
             }
@@ -199,7 +199,7 @@ namespace BPlusTree
         {
             FindKey(key, false, ref path);
             int numEntries = GetNodeEntriesCount(ref path, path.Depth);
-            ref var step = ref path.Steps[path.Depth];
+            ref var step = ref path.Leaf;
             if (step.Index < numEntries)
             {
                 var leafNode = AsLeafNode(step.Node!);

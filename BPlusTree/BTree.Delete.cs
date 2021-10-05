@@ -395,7 +395,7 @@ namespace BPlusTree
                                                          ref TKey rightPivotKey,
                                                          bool leftNeighborHasSameParent)
         {
-            ref var step = ref path.Steps[level];
+            ref var step = ref path[level];
             int deleteIndex = step.Index;
 
             // We reached the level of the leaf nodes.
@@ -426,7 +426,7 @@ namespace BPlusTree
                     BTreeCore.DeleteEntryWithinNode(rootLeafNode, 
                                                     deleteIndex, 
                                                     ref nodeLink.EntriesCount);
-                    path.Steps[level].Index = deleteIndex;
+                    path[level].Index = deleteIndex;
                 }
             }
 
@@ -541,8 +541,7 @@ namespace BPlusTree
                             Depth--;
 
                             // Delete the first step, for the old root node, in the path
-                            path.Steps.AsSpan()[1..(path.Depth + 1)].CopyTo(path.Steps);
-                            path = new BTreePath(path.Steps, path.Depth - 1, path.Version);
+                            path.DecreaseDepth();
                         }
                     }
                 }

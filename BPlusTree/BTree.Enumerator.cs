@@ -72,7 +72,7 @@ namespace BPlusTree
             {
                 for (int level = _path.Depth; level > 0; --level)
                 {
-                    ref var parentStep = ref _path.Steps[level - 1];
+                    ref var parentStep = ref _path[level - 1];
                     var parentNode = BTreeCore.AsInteriorNode<TKey>(parentStep.Node!);
                     int parentIndex = parentStep.Index;
                     if (parentIndex + 1 < parentNode.Length)
@@ -106,7 +106,7 @@ namespace BPlusTree
             {
                 for (int level = _path.Depth; level > 0; --level)
                 {
-                    ref var parentStep = ref _path.Steps[level - 1];
+                    ref var parentStep = ref _path[level - 1];
                     var parentNode = BTreeCore.AsInteriorNode<TKey>(parentStep.Node!);
                     int parentIndex = parentStep.Index;
                     if (parentIndex > 0)
@@ -148,7 +148,7 @@ namespace BPlusTree
 
                 BTreeCore.CheckEnumeratorVersion(ref _path, Owner._version);
 
-                ref var step = ref _path.Steps[_path.Depth];
+                ref var step = ref _path.Leaf;
 
                 // Do not increment step.Index on the very first call (after Reset)
                 if (_valid)
@@ -195,7 +195,7 @@ namespace BPlusTree
             {
                 BTreeCore.CheckEnumeratorVersion(ref _path, Owner._version);
 
-                ref var step = ref _path.Steps[_path.Depth];
+                ref var step = ref _path.Leaf;
                 if (step.Index == 0 && !MoveToPreviousLeafNode())
                 {
                     _current = default;
@@ -253,13 +253,13 @@ namespace BPlusTree
                 while (level < depth)
                 {
                     index = left ? 0 : node.EntriesCount;
-                    _path.Steps[level] = new BTreeStep(node.Child!, index);
+                    _path[level] = new BTreeStep(node.Child!, index);
                     node = BTreeCore.AsInteriorNode<TKey>(node.Child!)[index].Value;
                     ++level;
                 }
 
                 index = left ? 0 : node.EntriesCount;
-                _path.Steps[depth] = new BTreeStep(node.Child!, index);
+                _path.Leaf = new BTreeStep(node.Child!, index);
                 _entriesCount = node.EntriesCount;
             }
 

@@ -155,7 +155,7 @@ namespace BPlusTree
 
             // Insert into leaf first
             ref var leafEntriesCount = ref GetNodeEntriesCount(ref path, level);
-            ref var leafStep = ref path.Steps[level];
+            ref var leafStep = ref path[level];
             var leafNode = AsLeafNode(leafStep.Node!);
             int index = leafStep.Index;
             if (!BTreeCore.InsertWithinNode(key, value,
@@ -176,7 +176,7 @@ namespace BPlusTree
                 --level;
 
                 ref var interiorEntriesCount = ref GetNodeEntriesCount(ref path, level);
-                ref var interiorStep = ref path.Steps[level];
+                ref var interiorStep = ref path[level];
                 var interiorNode = BTreeCore.AsInteriorNode<TKey>(interiorStep.Node!);
 
                 index = interiorStep.Index + (isLeft ? 0 : 1);

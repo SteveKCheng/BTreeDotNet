@@ -6,10 +6,6 @@ namespace BPlusTree
 {
     public partial class BTree<TKey, TValue>
     {
-        public KeysCollection Keys => new KeysCollection(this);
-
-        ICollection<TKey> IDictionary<TKey, TValue>.Keys => Keys;
-
         public struct KeysCollection : ICollection<TKey>
         {
             public BTree<TKey, TValue> Owner { get; }
@@ -55,10 +51,6 @@ namespace BPlusTree
 
             public void Reset() => _itemsEnumerator.Reset();
         }
-
-        public ValuesCollection Values => new ValuesCollection(this);
-
-        ICollection<TValue> IDictionary<TKey, TValue>.Values => Values;
 
         public struct ValuesCollection : ICollection<TValue>
         {

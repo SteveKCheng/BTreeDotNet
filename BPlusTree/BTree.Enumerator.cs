@@ -393,7 +393,7 @@ namespace BPlusTree
             /// that the next call to <see cref="MovePrevious" /> retrieves
             /// the last entry of the B+Tree.
             /// </param>
-            public Enumerator(BTree<TKey, TValue> owner, bool toBeginning)
+            internal Enumerator(BTree<TKey, TValue> owner, bool toBeginning)
             {
                 Owner = owner;
                 _path = default;
@@ -407,11 +407,6 @@ namespace BPlusTree
         }
 
         /// <summary>
-        /// Prepare to enumerate entries in the B+Tree from the first onward.
-        /// </summary>
-        public Enumerator GetEnumerator() => GetEnumerator(toBeginning: true);
-
-        /// <summary>
         /// Prepare to enumerate entries in the B+Tree.
         /// </summary>
         /// <param name="toBeginning">
@@ -420,17 +415,7 @@ namespace BPlusTree
         /// the last entry, by calling <see cref="Enumerator.MovePrevious" />
         /// on the returned object.
         /// </param>
-        public Enumerator GetEnumerator(bool toBeginning) => new Enumerator(this, toBeginning);
+        protected Enumerator GetEnumerator(bool toBeginning) => new Enumerator(this, toBeginning);
 
-        IEnumerator<KeyValuePair<TKey, TValue>> IEnumerable<KeyValuePair<TKey, TValue>>.GetEnumerator()
-            => GetEnumerator();
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly => false;
-
-        /// <inheritdoc cref="ICollection{T}.CopyTo(T[], int)"/>
-        void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
-            => BTreeCore.CopyFromEnumeratorToArray(GetEnumerator(), Count, array, arrayIndex);
     }
 }

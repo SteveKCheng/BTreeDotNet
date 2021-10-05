@@ -253,45 +253,6 @@ namespace BPlusTree
             key = default!;
             return false;
         }
-
-        /// <summary>
-        /// Add an item to the B+Tree if another item of the same key is not
-        /// already present.
-        /// </summary>
-        /// <param name="key">The key of the item to add. </param>
-        /// <param name="value">The associated value of the item to add. </param>
-        /// <returns>
-        /// True if the key does not already exist in the B+Tree, and the
-        /// specified item has just been inserted.  False if another item
-        /// in the B+Tree already has the specified key.
-        /// </returns>
-        public bool TryAdd(TKey key, TValue value)
-        {
-            var path = NewPath();
-            try
-            {
-                if (!Unsafe.IsNullRef(ref FindEntry(ref path, key)))
-                    return false;
-
-                Insert(key, value, ref path);
-                return true;
-            }
-            finally
-            {
-                path.Dispose();
-            }
-        }
-
-        /// <summary>
-        /// Add an item to the B+Tree whose key is not already present.
-        /// </summary>
-        /// <param name="key">The key of the item to add. </param>
-        /// <param name="value">The associated value of the item to add. </param>
-        public void Add(TKey key, TValue value)
-        {
-            if (!TryAdd(key, value))
-                throw new InvalidOperationException("There is already an entry with the same key as the entry to add in the B+Tree. ");
-        }
     }
 }
 

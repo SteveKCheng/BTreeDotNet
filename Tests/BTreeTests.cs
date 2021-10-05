@@ -30,7 +30,7 @@ namespace BPlusTree
         [Fact]
         public void AddItems()
         {
-            var btree = new BTree<int, int>(8, Comparer<int>.Default);
+            var btree = new BTreeMap<int, int>(8, Comparer<int>.Default);
             var random = new Random(37);
 
             var items = GenerateRandomSequence(random, 300, true);
@@ -50,7 +50,7 @@ namespace BPlusTree
         [Fact]
         public void AddAndDeleteItems()
         {
-            var btree = new BTree<int, int>(8, Comparer<int>.Default);
+            var btree = new BTreeMap<int, int>(8, Comparer<int>.Default);
             var random = new Random(37);
             var items = GenerateRandomSequence(random, 300, true);
 

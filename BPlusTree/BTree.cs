@@ -32,7 +32,7 @@ namespace BPlusTree
     /// <typeparam name="TKey">The type of the look-up key. </typeparam>
     /// <typeparam name="TValue">The type of the data value associated to each 
     /// key. </typeparam>
-    public partial class BTree<TKey, TValue> : IDictionary<TKey, TValue>
+    public partial class BTree<TKey, TValue>
     {
         /// <summary>
         /// The maximum branching factor (or "order") supported by
@@ -53,7 +53,7 @@ namespace BPlusTree
         /// <summary>
         /// A total ordering of keys which this B+Tree will follow.
         /// </summary>
-        public IComparer<TKey> KeyComparer { get; }
+        protected IComparer<TKey> KeyComparer { get; }
 
         /// <summary>
         /// The depth of the B+Tree.
@@ -93,7 +93,7 @@ namespace BPlusTree
         /// </param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="order"/> is invalid. </exception>
         /// <exception cref="ArgumentNullException"><paramref name="keyComparer"/> is null. </exception>
-        public BTree(int order, IComparer<TKey> keyComparer)
+        internal BTree(int order, IComparer<TKey> keyComparer)
         {
             if (order < 0 || (order & 1) != 0)
                 throw new ArgumentOutOfRangeException(nameof(order), "The order of the B+Tree must be a positive even number. ");
@@ -181,7 +181,7 @@ namespace BPlusTree
         /// <remarks>
         /// The array used to record the path is pooled.
         /// </remarks>
-        private BTreePath NewPath()
+        internal BTreePath NewPath()
         {
             var steps = ArrayPool<BTreeStep>.Shared.Rent(Depth + 1);
             return new BTreePath(steps, Depth, _version);
@@ -195,7 +195,7 @@ namespace BPlusTree
         /// Reference to the entry in a leaf node that has the desired key,
         /// or null if it does not exist.
         /// </returns>
-        private ref Entry<TKey, TValue> FindEntry(ref BTreePath path, TKey key)
+        internal ref Entry<TKey, TValue> FindEntry(ref BTreePath path, TKey key)
         {
             FindKey(key, false, ref path);
             int numEntries = GetNodeEntriesCount(ref path, path.Depth);
@@ -237,11 +237,6 @@ namespace BPlusTree
             }
         }
 
-        public void Add(KeyValuePair<TKey, TValue> item)
-        {
-            Add(item.Key, item.Value);
-        }
-
         public void Clear()
         {
             Count = 0;
@@ -255,66 +250,6 @@ namespace BPlusTree
             {
                 Depth = 0;
                 _root.Child = new Entry<TKey, TValue>[Order];
-            }
-        }
-
-        public bool Contains(KeyValuePair<TKey, TValue> item)
-        {
-            // FIXME We need to scan the whole range if there is more than one item
-            // with the same key
-            if (TryGetValue(item.Key, out var value))
-                return EqualityComparer<TValue>.Default.Equals(item.Value, value);
-
-            return false;
-        }
-
-        public bool Remove(KeyValuePair<TKey, TValue> item)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Get or set a data item associated with a key.
-        /// </summary>
-        /// <param name="key">The look-up key. </param>
-        /// <returns>The data value associated with the look-up key. </returns>
-        public TValue this[TKey key]
-        {
-            get
-            {
-                var path = NewPath();
-                try
-                {
-                    ref var entry = ref FindEntry(ref path, key);
-                    if (Unsafe.IsNullRef(ref entry))
-                        throw new KeyNotFoundException($"The key {key} is not found in the B+Tree. ");
-
-                    return entry.Value;
-                }
-                finally
-                {
-                    path.Dispose();
-                }
-            }
-
-            set
-            {
-                var path = NewPath();
-                try
-                {
-                    ref var entry = ref FindEntry(ref path, key);
-                    if (Unsafe.IsNullRef(ref entry))
-                    {
-                        Insert(key, value, ref path);
-                        return;
-                    }
-
-                    entry.Value = value;
-                }
-                finally
-                {
-                    path.Dispose();
-                }
             }
         }
     }

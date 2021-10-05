@@ -23,9 +23,12 @@ namespace BPlusTree
         /// counts the number of active entries in the node.
         /// </param>
         /// <param name="index">
-        /// The index to insert the new entry at.  Entries occurring at
+        /// The index to insert the new entry at, to a maximum of 
+        /// <paramref name="numEntries"/>.  Entries occurring at
         /// and after this index are shifted forwards in the node.
         /// For internal nodes, this index may not be zero.
+        /// This index may be equal to the length of <paramref name="node"/>,
+        /// which immediately implies it needs to be split.
         /// </param>
         /// <param name="addToParent">
         /// The entry that must be inserted into the parent node
@@ -65,7 +68,7 @@ namespace BPlusTree
             // Node is full and needs to be split.
             else
             {
-                // Rounds down for internal nodes
+                // Rounds down for interior nodes
                 int halfLength = length >> 1;
 
                 // Prepare new node to split off entries to
@@ -146,7 +149,7 @@ namespace BPlusTree
         /// <param name="path">Path from the root to the location in the B+Tree 
         /// where the new entry is to be inserted.
         /// </param>
-        private void Insert(TKey key, TValue value, ref BTreePath path)
+        private void BasicInsert(TKey key, TValue value, ref BTreePath path)
         {
             int level = path.Depth;
 
@@ -154,37 +157,60 @@ namespace BPlusTree
             ref var leafEntriesCount = ref GetNodeEntriesCount(ref path, level);
             ref var leafStep = ref path.Steps[level];
             var leafNode = AsLeafNode(leafStep.Node!);
+            int index = leafStep.Index;
             if (!BTreeCore.InsertWithinNode(key, value,
-                                            leafNode, ref leafEntriesCount, leafStep.Index,
+                                            leafNode, ref leafEntriesCount,
+                                            index,
                                             out var addToParent))
-                goto done;
+                return;
+
+            // Update leaf step in the path to point to the new entry
+            int halfLength = leafNode.Length >> 1;
+            bool isLeft = (index <= halfLength);
+            leafStep = new BTreeStep(isLeft ? leafNode : addToParent.Value.Child!,
+                                     isLeft ? index : index - (halfLength - 1));
 
             // Loop and insert into successive parents if nodes need to split
             while (level > 0)
             {
                 --level;
 
-                ref var internalEntriesCount = ref GetNodeEntriesCount(ref path, level);
-                ref var internalStep = ref path.Steps[level];
-                var internalNode = BTreeCore.AsInteriorNode<TKey>(internalStep.Node!);
+                ref var interiorEntriesCount = ref GetNodeEntriesCount(ref path, level);
+                ref var interiorStep = ref path.Steps[level];
+                var interiorNode = BTreeCore.AsInteriorNode<TKey>(interiorStep.Node!);
 
+                index = interiorStep.Index + (isLeft ? 0 : 1);
+
+                // Add the right node after splitting from the level once below
                 if (!BTreeCore.InsertWithinNode(addToParent.Key, addToParent.Value,
-                                                internalNode, ref internalEntriesCount, internalStep.Index + 1,
+                                                interiorNode, ref interiorEntriesCount,
+                                                interiorStep.Index + 1,
                                                 out addToParent))
-                    goto done;
+                {
+                    interiorStep.Index = index;
+                    return;
+                }
+
+                // Update interior step in the path to select the correct node one level below
+                isLeft = (index <= halfLength);
+                interiorStep = new BTreeStep(isLeft ? interiorNode : addToParent.Value.Child!,
+                                             isLeft ? index : index - (halfLength - 1));
             };
 
             // Root node needs to split
-            {
-                var newRootNode = new Entry<TKey, NodeLink>[Order + 1];
-                newRootNode[0].Value = _root;
-                newRootNode[1] = addToParent;
-                _root = new NodeLink(newRootNode, 2);
-                Depth++;
-            }
+            var newRootNode = new Entry<TKey, NodeLink>[Order + 1];
+            newRootNode[0].Value = _root;
+            newRootNode[1] = addToParent;
+            _root = new NodeLink(newRootNode, 2);
+            ++Depth;
 
-        done:
-            Count++;
+            // FIXME need to add a new step to path
+        }
+
+        private void Insert(TKey key, TValue value, ref BTreePath path)
+        {
+            BasicInsert(key, value, ref path);
+            ++Count;
         }
 
         /// <summary>

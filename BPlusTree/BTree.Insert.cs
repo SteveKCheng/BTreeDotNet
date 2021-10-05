@@ -204,13 +204,17 @@ namespace BPlusTree
             _root = new NodeLink(newRootNode, 2);
             ++Depth;
 
-            // FIXME need to add a new step to path
+            // Add a step to the path for the new root node
+            path.IncreaseDepth();
+            path[0] = new BTreeStep(newRootNode, isLeft ? 0 : 1);
         }
 
         private void Insert(TKey key, TValue value, ref BTreePath path)
         {
+            int version = ++_version;
             BasicInsert(key, value, ref path);
             ++Count;
+            path.Version = version;
         }
 
         /// <summary>
@@ -232,7 +236,6 @@ namespace BPlusTree
                 if (!Unsafe.IsNullRef(ref FindEntry(ref path, key)))
                     return false;
 
-                ++_version;
                 Insert(key, value, ref path);
                 return true;
             }

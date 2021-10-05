@@ -68,6 +68,26 @@ namespace BPlusTree
         }
 
         /// <summary>
+        /// Extend this path because the B+Tree it refers to has spawned
+        /// a new root node and increased its depth.
+        /// </summary>
+        internal void IncreaseDepth()
+        {
+            var steps = _steps;
+            if (steps.Length < Depth + 2)
+            {
+                var newSteps = ArrayPool<BTreeStep>.Shared.Rent(Depth + 2);
+                var oldSteps = steps.AsSpan()[0..(Depth + 1)];
+                oldSteps.CopyTo(newSteps);
+                oldSteps.Clear();
+                _steps = newSteps;
+                ArrayPool<BTreeStep>.Shared.Return(steps);
+            }
+
+            ++Depth;
+        }
+
+        /// <summary>
         /// The depth of the B+Tree.
         /// </summary>
         /// <remarks>
@@ -99,7 +119,7 @@ namespace BPlusTree
 
             if (steps != null)
             {
-                steps.AsSpan()[0..Depth].Clear();
+                steps.AsSpan()[0..(Depth + 1)].Clear();
                 ArrayPool<BTreeStep>.Shared.Return(steps);
             }
         }

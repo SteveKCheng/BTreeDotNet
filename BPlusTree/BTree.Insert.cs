@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace BPlusTree
@@ -209,12 +210,48 @@ namespace BPlusTree
             path[0] = new BTreeStep(newRootNode, isLeft ? 0 : 1);
         }
 
-        private void Insert(TKey key, TValue value, ref BTreePath path)
+        internal void Insert(TKey key, TValue value, ref BTreePath path)
         {
             int version = ++_version;
             BasicInsert(key, value, ref path);
             ++Count;
             path.Version = version;
+        }
+
+        /// <summary>
+        /// Get the key of the entry that precedes the one pointed to, if it exists.
+        /// </summary>
+        /// <remarks>
+        /// This function is used in checking that a new key can be properly 
+        /// inserted into the location in the B+Tree given by <paramref name="path" />.
+        /// </remarks>
+        /// <param name="path">Path to the (current) data entry in the B+Tree. </param>
+        /// <param name="key">Set to the key of the preceding entry, or the default
+        /// if it does not exist.
+        /// </param>
+        /// <returns>True if a preceding entry exists. False if the path
+        /// points to the first entry. </returns>
+        internal static bool TryGetPrecedingKey(ref BTreePath path, [MaybeNullWhen(false)] out TKey key)
+        {
+            ref var leafStep = ref path.Leaf;
+            if (leafStep.Index > 0)
+            {
+                key = AsLeafNode(leafStep.Node!)[leafStep.Index - 1].Key;
+                return true;
+            }
+
+            for (int level = path.Depth; level > 0; --level)
+            {
+                ref var parentStep = ref path[level - 1];
+                if (parentStep.Index > 0)
+                {
+                    key = BTreeCore.AsInteriorNode<TKey>(parentStep.Node!)[parentStep.Index].Key;
+                    return true;
+                }
+            }
+
+            key = default!;
+            return false;
         }
 
         /// <summary>

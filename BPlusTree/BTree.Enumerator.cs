@@ -235,6 +235,40 @@ namespace BPlusTree
             }
 
             /// <summary>
+            /// Insert an entry into the B+Tree using this
+            /// enumerator as the hint to the location.
+            /// </summary>
+            /// <param name="key">The desired key to insert. </param>
+            /// <param name="value">The value associated to the key to insert. </param>
+            /// <returns>
+            /// True if the entry may be inserted at the current location and has
+            /// been inserted successfully.  False if the entry may not be inserted
+            /// at the current location because it would disrupt the ordering 
+            /// of keys in the B+Tree, i.e. the current location is not valid
+            /// as a hint.
+            /// </returns>
+            public bool TryInsertBefore(TKey key, TValue value)
+            {
+                if (!_ended)
+                {
+                    if (!_valid)
+                        return false;
+
+                    if (Owner.KeyComparer.Compare(key, _current.Key) > 0)
+                        return false;
+                }
+
+                if (BTree<TKey, TValue>.TryGetPrecedingKey(ref _path, out var precedingKey) &&
+                    Owner.KeyComparer.Compare(precedingKey, key) > 0)
+                    return false;
+
+                Owner.Insert(key, value, ref _path);
+                _current = new KeyValuePair<TKey, TValue>(key, value);
+
+                return true;
+            }
+
+            /// <summary>
             /// Modifies <see cref="_path"/>
             /// to be the left-most path
             /// or right-most path starting from a given of the B+Tree.

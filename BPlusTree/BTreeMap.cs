@@ -282,12 +282,12 @@ namespace BPlusTree
         /// Get the read-only sequence of all keys currently in this B+Tree, 
         /// presented in the order specified by <see cref="KeyComparer" />.
         /// </summary>
-        public KeysCollection Keys => new KeysCollection(this);
+        public BTreeKeysCollection<TKey, TValue> Keys => new BTreeKeysCollection<TKey, TValue>(this);
 
         /// <summary>
         /// Get all values in this B+Tree, presented in the same sequence
         /// as their corresponding keys from <see cref="Keys" />.
-        public ValuesCollection Values => new ValuesCollection(this);
+        public BTreeValuesCollection<TKey, TValue> Values => new BTreeValuesCollection<TKey, TValue>(this);
 
         /// <inheritdoc cref="IDictionary{TKey, TValue}.Keys" />
         ICollection<TKey> IDictionary<TKey, TValue>.Keys => Keys;

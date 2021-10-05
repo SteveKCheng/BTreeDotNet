@@ -550,7 +550,7 @@ namespace BPlusTree
             return false;
         }
 
-        private void DeleteAtPath(ref BTreePath path)
+        internal void DeleteAtPath(ref BTreePath path)
         {
             int version = ++_version;
             DeleteEntryAndRecursivelyRebalance(ref path, 0, ref _root,
@@ -561,24 +561,6 @@ namespace BPlusTree
                                                false);
             path.Version = version;
             Count--;
-        }
-
-        public bool Remove(TKey key)
-        {
-            var path = NewPath();
-            try
-            {
-                ref var entry = ref FindEntry(ref path, key);
-                if (Unsafe.IsNullRef(ref entry))
-                    return false;
-
-                DeleteAtPath(ref path);
-                return true;
-            }
-            finally
-            {
-                path.Dispose();
-            }
         }
     }
 }

@@ -9,9 +9,17 @@ namespace BPlusTree
                                         , IDictionary<TKey, TValue>
                                         , IReadOnlyDictionary<TKey, TValue>
     {
+        /// <inheritdoc cref="IDictionary{TKey, TValue}.Keys" />
         ICollection<TKey> IDictionary<TKey, TValue>.Keys => Keys;
 
+        /// <inheritdoc cref="IDictionary{TKey, TValue}.Values" />
         ICollection<TValue> IDictionary<TKey, TValue>.Values => Values;
+
+        /// <inheritdoc cref="IReadOnlyDictionary{TKey, TValue}.Keys" />
+        IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
+
+        /// <inheritdoc cref="IReadOnlyDictionary{TKey, TValue}.Values" />
+        IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
 
         /// <summary>
         /// Construct an empty B+Tree.
@@ -29,7 +37,6 @@ namespace BPlusTree
         {
         }
 
-
         /// <summary>
         /// Add an item to the B+Tree if another item of the same key is not
         /// already present.
@@ -46,7 +53,7 @@ namespace BPlusTree
             var path = NewPath();
             try
             {
-                if (!Unsafe.IsNullRef(ref FindEntry(ref path, key)))
+                if (FindKey(key, false, ref path))
                     return false;
 
                 Insert(key, value, ref path);
@@ -139,19 +146,41 @@ namespace BPlusTree
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
+        /// <summary>
+        /// Always false: signals this container can be modified.
+        /// </summary>
         bool ICollection<KeyValuePair<TKey, TValue>>.IsReadOnly => false;
 
         public KeysCollection Keys => new KeysCollection(this);
 
         public ValuesCollection Values => new ValuesCollection(this);
 
-        IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
-
-        IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
-
         /// <inheritdoc cref="ICollection{T}.CopyTo(T[], int)"/>
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
             => BTreeCore.CopyFromEnumeratorToArray(GetEnumerator(), Count, array, arrayIndex);
 
+        /// <summary>
+        /// Remove the entry with the given key, if it exists.
+        /// </summary>
+        /// <param name="key">The key of the entry to remove. </param>
+        /// <returns>Whether the entry with the key existed (and has been removed). </returns>
+        public bool Remove(TKey key)
+        {
+            var path = NewPath();
+            try
+            {
+                if (FindKey(key, false, ref path))
+                {
+                    DeleteAtPath(ref path);
+                    return true;
+                }
+
+                return false;
+            }
+            finally
+            {
+                path.Dispose();
+            }
+        }
     }
 }

@@ -122,7 +122,7 @@ namespace BPlusTree
         /// <returns>
         /// Whether the exact key has been found in the B+Tree.
         /// </returns>
-        private bool FindKey(TKey key, bool forUpperBound, ref BTreePath path)
+        internal bool FindKey(TKey key, bool forUpperBound, ref BTreePath path)
         {
             var currentLink = _root;
 
@@ -205,15 +205,10 @@ namespace BPlusTree
         /// </returns>
         internal ref Entry<TKey, TValue> FindEntry(ref BTreePath path, TKey key)
         {
-            FindKey(key, false, ref path);
-            int numEntries = GetNodeEntriesCount(ref path, path.Depth);
-            ref var step = ref path.Leaf;
-            if (step.Index < numEntries)
+            if (FindKey(key, false, ref path))
             {
-                var leafNode = AsLeafNode(step.Node!);
-                ref var entry = ref leafNode[step.Index];
-                if (KeyComparer.Compare(entry.Key, key) == 0)
-                    return ref entry;
+                ref var step = ref path.Leaf;
+                return ref AsLeafNode(step.Node!)[step.Index];
             }
 
             return ref Unsafe.NullRef<Entry<TKey, TValue>>();

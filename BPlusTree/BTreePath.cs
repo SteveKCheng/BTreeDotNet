@@ -14,15 +14,18 @@ namespace BPlusTree
     internal struct BTreePath : IDisposable
     {
         /// <summary>
-        /// Each step along the path.
+        /// Array, which may be over-allocated, to store information
+        /// on each step along the path.
         /// </summary>
         /// <remarks>
-        /// Step 0 selects an entry in the root node,
-        /// Step 1 selects an entry in the B+Tree of level 1,
-        /// and so forth, until step N (N = <see cref="Depth" />) 
-        /// selects an entry in the leaf node.
+        /// The steps are stored "backwards", e.g. the step
+        /// at an index is for the B+Tree level being
+        /// Depth minus index.  B+Trees always grow or shrink
+        /// from the root node so storing the steps backwards
+        /// allows the path to grow or shrink without having
+        /// to copy existing elements.
         /// </remarks>
-        private BTreeStep[] Steps { get; }
+        private BTreeStep[] _steps;
 
         /// <summary>
         /// Select one step along the path.
@@ -38,7 +41,7 @@ namespace BPlusTree
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return ref Steps[level];
+                return ref _steps[Depth - level];
             }
         }
 
@@ -50,7 +53,7 @@ namespace BPlusTree
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return ref Steps[Depth];
+                return ref _steps[0];
             }
         }
 
@@ -60,9 +63,8 @@ namespace BPlusTree
         /// </summary>
         internal void DecreaseDepth()
         {
-            // Delete the first step, for the old root node, in the path
-            Steps.AsSpan()[1..(Depth + 1)].CopyTo(Steps);
-            Depth--;
+            // Delete the step for the old root node, in the path
+            _steps[Depth--] = default;
         }
 
         /// <summary>
@@ -85,18 +87,21 @@ namespace BPlusTree
 
         internal BTreePath(BTreeStep[] steps, int depth, int version)
         {
-            Steps = steps;
+            _steps = steps;
             Depth = depth;
             Version = version;
         }
 
         public void Dispose()
         {
-            var steps = Steps;
+            var steps = _steps;
             this = default;
 
             if (steps != null)
+            {
+                steps.AsSpan()[0..Depth].Clear();
                 ArrayPool<BTreeStep>.Shared.Return(steps);
+            }
         }
     }
 
@@ -107,7 +112,7 @@ namespace BPlusTree
     {
         /// <summary>
         /// The B+Tree node present at the level of the B+Tree given by the 
-        /// index of this instance within <see cref="BTreePath.Steps" />.
+        /// index of this instance within <see cref="BTreePath._steps" />.
         /// </summary>
         public object? Node;
 

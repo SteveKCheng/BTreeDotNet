@@ -550,6 +550,10 @@ namespace BPlusTree
             return false;
         }
 
+        /// <summary>
+        /// Delete the entry pointed to by a path in the B+Tree.
+        /// </summary>
+        /// <param name="path">Path pointing to the entry to delete. </param>
         internal void DeleteAtPath(ref BTreePath path)
         {
             int version = ++_version;

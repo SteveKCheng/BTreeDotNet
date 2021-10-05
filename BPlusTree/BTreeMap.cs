@@ -21,6 +21,9 @@ namespace BPlusTree
     /// Keys are ordered according to <see cref="KeyComparer" />.  There may not be 
     /// duplicate keys.
     /// </para>
+    /// <para>
+    /// Instances are not thread-safe.  
+    /// </para>
     /// </remarks>
     /// <typeparam name="TKey">The type of the look-up key. </typeparam>
     /// <typeparam name="TValue">The type of the data value associated to each 
@@ -40,7 +43,7 @@ namespace BPlusTree
         /// are equivalence classes of keys, at most one member from each equivalence
         /// class can be stored as a key in the B+Tree.
         /// </remarks>
-        public new IComparer<TKey> KeyComparer => base.KeyComparer;
+        public IComparer<TKey> KeyComparer => base._keyComparer;
 
         /// <summary>
         /// Construct an empty B+Tree.
@@ -80,7 +83,7 @@ namespace BPlusTree
                 {
                     ref var entry = ref FindEntry(ref path, key);
                     if (Unsafe.IsNullRef(ref entry))
-                        Insert(key, value, ref path);
+                        InsertAtPath(key, value, ref path);
                     else
                         entry.Value = value;
                 }
@@ -142,7 +145,7 @@ namespace BPlusTree
                 if (FindKey(key, false, ref path))
                     return false;
 
-                Insert(key, value, ref path);
+                InsertAtPath(key, value, ref path);
                 return true;
             }
             finally

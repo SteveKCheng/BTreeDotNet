@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace BPlusTree
 {
     /// <summary>
-    /// A B+Tree held entirely in managed memory.
+    /// Base class that implements a B+Tree held entirely in managed memory.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -26,7 +25,6 @@ namespace BPlusTree
     /// Addition and removal of entries take O(Depth) running time,
     /// where Depth is the depth of the B+Tree, which is approximately log_B(N) for N
     /// being the number of entries in the B+Tree and B being the branching factor (order).
-    /// Items with duplicate keys may be placed in the B+Tree.
     /// </para>
     /// </remarks>
     /// <typeparam name="TKey">The type of the look-up key. </typeparam>
@@ -53,7 +51,7 @@ namespace BPlusTree
         /// <summary>
         /// A total ordering of keys which this B+Tree will follow.
         /// </summary>
-        internal IComparer<TKey> KeyComparer { get; }
+        internal readonly IComparer<TKey> _keyComparer;
 
         /// <summary>
         /// The depth of the B+Tree.
@@ -100,7 +98,7 @@ namespace BPlusTree
             if (order > MaxOrder)
                 throw new ArgumentOutOfRangeException(nameof(order), $"The order of the B+Tree may not exceed {MaxOrder}. ");
 
-            KeyComparer = keyComparer ?? throw new ArgumentNullException(nameof(keyComparer));
+            _keyComparer = keyComparer ?? throw new ArgumentNullException(nameof(keyComparer));
             Order = order;
 
             // Always create an empty root node so we do not have to
@@ -132,7 +130,7 @@ namespace BPlusTree
             for (int level = 0; level < depth; ++level)
             {
                 var internalNode = BTreeCore.AsInteriorNode<TKey>(currentLink.Child!);
-                index = BTreeCore.SearchKeyWithinNode(KeyComparer, key, forUpperBound, 
+                index = BTreeCore.SearchKeyWithinNode(_keyComparer, key, forUpperBound, 
                                                       internalNode, currentLink.EntriesCount,
                                                       out _);
 
@@ -141,7 +139,7 @@ namespace BPlusTree
             }
 
             var leafNode = AsLeafNode(currentLink.Child!);
-            index = BTreeCore.SearchKeyWithinNode(KeyComparer, key, forUpperBound, 
+            index = BTreeCore.SearchKeyWithinNode(_keyComparer, key, forUpperBound, 
                                                   leafNode, currentLink.EntriesCount,
                                                   out bool found);
 
@@ -234,6 +232,9 @@ namespace BPlusTree
             }
         }
 
+        /// <summary>
+        /// Remove all entries from this B+Tree.
+        /// </summary>
         public void Clear()
         {
             ++_version;

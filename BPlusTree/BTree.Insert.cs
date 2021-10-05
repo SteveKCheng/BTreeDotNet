@@ -210,7 +210,19 @@ namespace BPlusTree
             path[0] = new BTreeStep(newRootNode, isLeft ? 0 : 1);
         }
 
-        internal void Insert(TKey key, TValue value, ref BTreePath path)
+        /// <summary>
+        /// Insert a key-value pair into the B+Tree at a location
+        /// where the key would be ordered correctly.
+        /// </summary>
+        /// <param name="key">The key to insert. </param>
+        /// <param name="value">The value associated with the key to insert. </param>
+        /// <param name="path">Path in the B+Tree that points in between the lower bound
+        /// upper bound locations for insertion of <paramref name="key" />.
+        /// This method does not check that the path is valid.  If the caller
+        /// has just found the location by <see cref="FindKey(TKey, bool, ref BTreePath)" />,
+        /// checking would not be necessary.
+        /// </param>
+        internal void InsertAtPath(TKey key, TValue value, ref BTreePath path)
         {
             int version = ++_version;
             BasicInsert(key, value, ref path);

@@ -252,15 +252,15 @@ namespace BPlusTree
                 if (!_valid)
                     return false;
 
-                if (Owner.KeyComparer.Compare(key, _current.Key) > 0)
+                if (Owner._keyComparer.Compare(key, _current.Key) > 0)
                     return false;
             }
 
             if (BTree<TKey, TValue>.TryGetPrecedingKey(ref _path, out var precedingKey) &&
-                Owner.KeyComparer.Compare(precedingKey, key) > 0)
+                Owner._keyComparer.Compare(precedingKey, key) > 0)
                 return false;
 
-            Owner.Insert(key, value, ref _path);
+            Owner.InsertAtPath(key, value, ref _path);
             _current = new KeyValuePair<TKey, TValue>(key, value);
 
             return true;

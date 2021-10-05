@@ -214,25 +214,19 @@ namespace BPlusTree
             return ref Unsafe.NullRef<Entry<TKey, TValue>>();
         }
 
-        public bool ContainsKey(TKey key)
-        {
-            return TryGetValue(key, out _);
-        }
-
-        public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
+        /// <summary>
+        /// Returns whether an entry with the given key exists in this B+Tree.
+        /// </summary>
+        /// <param name="key">The key to look for. </param>
+        /// <returns>
+        /// Whether the entry keyed with <paramref name="key"/> exists in this B+Tree.
+        /// </returns>
+        internal bool ContainsKey(TKey key)
         {
             var path = NewPath();
             try
             {
-                ref var entry = ref FindEntry(ref path, key);
-                if (Unsafe.IsNullRef(ref entry))
-                {
-                    value = default;
-                    return false;
-                }
-
-                value = entry.Value;
-                return true;
+                return FindKey(key, false, ref path);
             }
             finally
             {
@@ -242,6 +236,7 @@ namespace BPlusTree
 
         public void Clear()
         {
+            ++_version;
             Count = 0;
             _root.EntriesCount = 0;
 

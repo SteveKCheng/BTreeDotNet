@@ -5,7 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace BPlusTree
+namespace GoldSaucer.BTree
 {
     /// <summary>
     /// Dummy type used as the type of value to adapt associative containers 

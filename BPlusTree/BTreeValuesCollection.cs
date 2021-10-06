@@ -5,7 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace BPlusTree
+namespace GoldSaucer.BTree
 {
     /// <summary>
     /// Read-only sequence of the values in a B+Tree, presented in the

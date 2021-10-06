@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace BPlusTree
+namespace GoldSaucer.BTree
 {
     /// <summary>
     /// The data associated with a key in an interior node

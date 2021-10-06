@@ -5,7 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace BPlusTree
+namespace GoldSaucer.BTree
 {
     internal static partial class BTreeCore
     {

@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
-namespace BPlusTree
+namespace GoldSaucer.BTree
 {
     /// <summary>
     /// Base class that implements a B+Tree held entirely in managed memory.

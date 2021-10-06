@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BPlusTree
+namespace GoldSaucer.BTree
 {
     /// <summary>
     /// Basic algorithms used to implement <see cref="BTree{TKey, TValue}"/>.

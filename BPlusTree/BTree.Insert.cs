@@ -5,7 +5,7 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
-namespace BPlusTree
+namespace GoldSaucer.BTree
 {
     internal static partial class BTreeCore
     {

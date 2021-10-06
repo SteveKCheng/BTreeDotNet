@@ -1,12 +1,12 @@
 // © 2001 Steve Cheng.
-// See LICENSE.txt for licensing details of this work.
+// See LICENSE.txt for copyright licensing of this work.
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 
-namespace BPlusTree
+namespace GoldSaucer.BTree
 {
     public class BTreeTests
     {

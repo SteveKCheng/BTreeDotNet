@@ -7,7 +7,22 @@
     <RootNamespace>GoldSaucer.BTree</RootNamespace>
     <PackageId>GoldSaucer.BTree</PackageId>
     <Description>Managed in-memory implementation of B+Trees</Description>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="BTree.cs" />
+    <Compile Include="BTree.Delete.cs" />
+    <Compile Include="BTree.Insert.cs" />
+    <Compile Include="BTreeCore.cs" />
+    <Compile Include="BTreeEnumerator.cs" />
+    <Compile Include="BTreeKeysCollection.cs" />
+    <Compile Include="BTreeMap.cs" />
+    <Compile Include="BTreePath.cs" />
+    <Compile Include="BTreeSet.cs" />
+    <Compile Include="BTreeValuesCollection.cs" />
+    <Compile Include="NodeLink.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="GitVersion.MsBuild" Version="5.7.0">

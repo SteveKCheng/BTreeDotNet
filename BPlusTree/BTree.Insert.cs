@@ -206,8 +206,7 @@ namespace BPlusTree
             ++Depth;
 
             // Add a step to the path for the new root node
-            path.IncreaseDepth();
-            path[0] = new BTreeStep(newRootNode, isLeft ? 0 : 1);
+            path.IncreaseDepth(new BTreeStep(newRootNode, isLeft ? 0 : 1));
         }
 
         /// <summary>

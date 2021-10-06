@@ -5,6 +5,15 @@
     <Nullable>enable</Nullable>
     <LangVersion>8</LangVersion>
     <RootNamespace>GoldSaucer.BTree</RootNamespace>
+    <PackageId>GoldSaucer.BTree</PackageId>
+    <Description>Managed in-memory implementation of B+Trees</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="GitVersion.MsBuild" Version="5.7.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
 
 </Project>

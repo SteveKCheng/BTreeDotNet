@@ -1,4 +1,7 @@
-﻿using System;
+﻿// © 2001 Steve Cheng.
+// See LICENSE.txt for copyright licensing of this work.
+
+using System;
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;

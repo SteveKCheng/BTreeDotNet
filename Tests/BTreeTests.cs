@@ -1,3 +1,6 @@
+// © 2001 Steve Cheng.
+// See LICENSE.txt for licensing details of this work.
+
 using System;
 using System.Collections.Generic;
 using System.Linq;

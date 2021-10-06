@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace BPlusTree
 {
@@ -67,6 +68,7 @@ namespace BPlusTree
     /// can take references to them.  For internal nodes,
     /// <typeparamref name="TValue" /> is <see cref="NodeLink" />.
     /// </remarks>
+    [DebuggerDisplay("{Key}: {Value}")]
     internal struct Entry<TKey, TValue>
     {
         /// <summary>

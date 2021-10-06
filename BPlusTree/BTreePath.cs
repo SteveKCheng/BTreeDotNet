@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace BPlusTree
@@ -146,6 +147,7 @@ namespace BPlusTree
     /// <summary>
     /// Describes one selection step when moving down the B+Tree in <see cref="BTreePath" />.
     /// </summary>
+    [DebuggerDisplay("Index: {Index}")]
     internal struct BTreeStep
     {
         /// <summary>

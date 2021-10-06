@@ -204,24 +204,7 @@ namespace BPlusTree
         /// </summary>
         /// <param name="key">The key of the entry to remove. </param>
         /// <returns>Whether the entry with the key existed (and has been removed). </returns>
-        public bool Remove(TKey key)
-        {
-            var path = NewPath();
-            try
-            {
-                if (FindKey(key, false, ref path))
-                {
-                    DeleteAtPath(ref path);
-                    return true;
-                }
-
-                return false;
-            }
-            finally
-            {
-                path.Dispose();
-            }
-        }
+        public bool Remove(TKey key) => DeleteByKey(key);
 
         /// <summary>
         /// Delete an entry that matches the given key and value.

@@ -566,5 +566,29 @@ namespace BPlusTree
             path.Version = version;
             Count--;
         }
+
+        /// <summary>
+        /// Remove the (first) entry with the given key, if it exists.
+        /// </summary>
+        /// <param name="key">The key of the entry to remove. </param>
+        /// <returns>Whether the entry with the key existed (and has been removed). </returns>
+        internal bool DeleteByKey(TKey key)
+        {
+            var path = NewPath();
+            try
+            {
+                if (FindKey(key, false, ref path))
+                {
+                    DeleteAtPath(ref path);
+                    return true;
+                }
+
+                return false;
+            }
+            finally
+            {
+                path.Dispose();
+            }
+        }
     }
 }

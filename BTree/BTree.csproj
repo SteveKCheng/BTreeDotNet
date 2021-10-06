@@ -8,6 +8,8 @@
     <LangVersion>8</LangVersion>
     <Description>Managed in-memory implementation of B+Trees</Description>
     <Authors>Steve Cheng</Authors>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 

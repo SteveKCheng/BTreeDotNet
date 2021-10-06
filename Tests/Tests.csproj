@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BPlusTree\BTree.csproj" />
+    <ProjectReference Include="..\BTree\BTree.csproj" />
   </ItemGroup>
 
 </Project>

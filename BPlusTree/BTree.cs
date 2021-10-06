@@ -165,7 +165,7 @@ namespace BPlusTree
         /// </remarks>
         /// <param name="path">Path to the desired node from the root. </param>
         /// <param name="level">The level of the desired node in the path. </param>
-        private ref int GetNodeEntriesCount(ref BTreePath path, int level)
+        internal ref int GetNodeEntriesCount(ref BTreePath path, int level)
         {
             if (level > 0)
             {

@@ -227,6 +227,7 @@ namespace BPlusTree
 
             BTreeCore.CheckEnumeratorVersion(ref _path, Owner._version);
             Owner.DeleteAtPath(ref _path);
+            _entriesCount = Owner.GetNodeEntriesCount(ref _path, _path.Depth);
 
             _current = default;
             _valid = false;
@@ -261,6 +262,7 @@ namespace BPlusTree
                 return false;
 
             Owner.InsertAtPath(key, value, ref _path);
+            _entriesCount = Owner.GetNodeEntriesCount(ref _path, _path.Depth);
             _current = new KeyValuePair<TKey, TValue>(key, value);
 
             return true;

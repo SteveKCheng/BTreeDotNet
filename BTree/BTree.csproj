@@ -2,11 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
+    <AssemblyName>GoldSaucer.BTree</AssemblyName>
+    <RootNamespace>GoldSaucer.BTree</RootNamespace>
     <Nullable>enable</Nullable>
     <LangVersion>8</LangVersion>
-    <RootNamespace>GoldSaucer.BTree</RootNamespace>
-    <PackageId>GoldSaucer.BTree</PackageId>
     <Description>Managed in-memory implementation of B+Trees</Description>
+    <Authors>Steve Cheng</Authors>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 

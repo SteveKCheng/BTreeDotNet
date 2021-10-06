@@ -27,11 +27,14 @@ namespace BPlusTree
             return items;
         }
 
-        [Fact]
-        public void AddItems()
+        [Theory]
+        [InlineData(37)]
+        [InlineData(55)]
+        [InlineData(99)]
+        public void InsertItems(int seed)
         {
             var btree = new BTreeMap<int, int>(8, Comparer<int>.Default);
-            var random = new Random(37);
+            var random = new Random(seed);
 
             var items = GenerateRandomSequence(random, 300, true);
 
@@ -47,11 +50,14 @@ namespace BPlusTree
             Assert.Equal(sortedItems, outputs.Select(item => item.Key));
         }
 
-        [Fact]
-        public void AddAndDeleteItems()
+        [Theory]
+        [InlineData(37)]
+        [InlineData(55)]
+        [InlineData(99)]
+        public void InsertAndDeleteItems(int seed)
         {
             var btree = new BTreeMap<int, int>(8, Comparer<int>.Default);
-            var random = new Random(37);
+            var random = new Random(seed);
             var items = GenerateRandomSequence(random, 300, true);
 
             var removedItems = new List<int>();

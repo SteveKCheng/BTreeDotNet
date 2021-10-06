@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
@@ -184,14 +183,7 @@ namespace BPlusTree
         /// Create a new instance of the structure used to record a path
         /// through the B+Tree.
         /// </summary>
-        /// <remarks>
-        /// The array used to record the path is pooled.
-        /// </remarks>
-        internal BTreePath NewPath()
-        {
-            var steps = ArrayPool<BTreeStep>.Shared.Rent(Depth + 1);
-            return new BTreePath(steps, Depth, _version);
-        }
+        internal BTreePath NewPath() => new BTreePath(Depth, _version);
 
         /// <summary>
         /// Find the first entry with the given key.

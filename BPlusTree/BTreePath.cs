@@ -105,13 +105,26 @@ namespace BPlusTree
         /// </summary>
         internal int Version { get; set; }
 
-        internal BTreePath(BTreeStep[] steps, int depth, int version)
+        /// <summary>
+        /// Prepare to record a path through the B+Tree.
+        /// </summary>
+        /// <remarks>
+        /// The array used to record the steps of the path is pooled.
+        /// It is initially over-allocated so that, for a small number of
+        /// insertions, updating the path does not require allocating
+        /// a new array.  
+        /// </remarks>
+        internal BTreePath(int depth, int version)
         {
-            _steps = steps;
             Depth = depth;
             Version = version;
+            _steps = ArrayPool<BTreeStep>.Shared.Rent(depth + 3);
         }
 
+        /// <summary>
+        /// Dispose of this structure, returning the array used to 
+        /// record the path to the shared pool.
+        /// </summary>
         public void Dispose()
         {
             var steps = _steps;

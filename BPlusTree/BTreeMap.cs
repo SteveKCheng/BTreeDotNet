@@ -49,7 +49,7 @@ namespace BPlusTree
         public IComparer<TKey> KeyComparer => base._keyComparer;
 
         /// <summary>
-        /// Construct an empty B+Tree.
+        /// Prepare an initially empty container.
         /// </summary>
         /// <param name="order">The desired order of the B+Tree. 
         /// This must be a positive even number not greater than <see cref="MaxOrder" />.

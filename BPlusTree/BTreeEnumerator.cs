@@ -280,13 +280,20 @@ namespace BPlusTree
         /// </param>
         /// <param name="left">True to take left-most path; false to take the right-most path.
         /// </param>
+        /// <remarks>
+        /// The right-most path is defined to have an index at the leaf node 
+        /// that is (one) past the end, and not on the last entry there. 
+        /// This lets the following call to <see cref="MovePrevious" />
+        /// move the path to point to the last entry, without any special
+        /// handling.
+        /// </remarks>
         private void ResetPathPartially(NodeLink node, int level, bool left)
         {
             int depth = _path.Depth;
             int index;
             while (level < depth)
             {
-                index = left ? 0 : node.EntriesCount;
+                index = left ? 0 : (node.EntriesCount - 1);
                 _path[level] = new BTreeStep(node.Child!, index);
                 node = BTreeCore.AsInteriorNode<TKey>(node.Child!)[index].Value;
                 ++level;

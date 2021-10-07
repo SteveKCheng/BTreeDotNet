@@ -1,4 +1,4 @@
-﻿// © 2001 Steve Cheng.
+﻿// © 2021 Steve Cheng.
 // See LICENSE.txt for copyright licensing of this work.
 
 using System;
